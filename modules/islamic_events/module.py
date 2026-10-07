@@ -1,21 +1,9 @@
-"""
-Islam Mate API — Islamic Events Module
-=======================================
-GET /api/v1/hijri/events  — Full Islamic calendar events for a year
-
-Covers:
-  - Major holidays (Eid, Ramadan, Ashura, Mawlid…)
-  - Hijri month listing
-  - Special nights (last 10 nights of Ramadan)
-  - Weekly Jumu'ah (Friday prayers)
-  - Monthly White Days (13, 14, 15 of each Hijri month)
-"""
-
-from datetime import datetime, date
 from fastapi import APIRouter, Query, Request
-
 from base.base_module import BaseModule
-from .helpers import hijri_to_gregorian, gregorian_to_hijri, get_all_fridays, get_white_days
+from datetime import datetime, date, timedelta
+from hijridate import Gregorian, Hijri
+from modules.location.platforms import router as platforms_router
+import math
 
 
 class Module(BaseModule):
@@ -29,10 +17,54 @@ class Module(BaseModule):
             self.get_events,
             methods=["GET"],
             summary="Full Islamic calendar events for a year",
-            tags=["Hijri Calendar"],
+            tags=["Hijri Calendar"]
         )
 
-    # ── Helper (uses self.translate — stays in the class) ──────────────────────
+    # ============================================
+    # HELPERS
+    # ============================================
+
+    def _hijri_to_gregorian(self, year: int, month: int, day: int) -> date:
+        """Convert Hijri date to Gregorian."""
+        try:
+            g = Hijri(year, month, day).to_gregorian()
+            return date(g.year, g.month, g.day)
+        except Exception:
+            return None
+
+    def _gregorian_to_hijri(self, d: date) -> tuple:
+        """Convert Gregorian date to Hijri."""
+        try:
+            h = Gregorian(d.year, d.month, d.day).to_hijri()
+            return h.year, h.month, h.day
+        except Exception:
+            return None, None, None
+
+    def _get_all_fridays(self, year: int) -> list[date]:
+        """Get all Fridays in a Gregorian year."""
+        fridays = []
+        d = date(year, 1, 1)
+        # Find first Friday
+        while d.weekday() != 4:  # 4 = Friday
+            d += timedelta(days=1)
+        while d.year == year:
+            fridays.append(d)
+            d += timedelta(days=7)
+        return fridays
+
+    def _get_white_days(self, hijri_year: int) -> list[dict]:
+        """Get White Days (13, 14, 15) for all Hijri months in a year."""
+        white_days = []
+        for month in range(1, 13):
+            for day in [13, 14, 15]:
+                g_date = self._hijri_to_gregorian(hijri_year, month, day)
+                if g_date:
+                    white_days.append({
+                        "hijri_day": day,
+                        "hijri_month": month,
+                        "gregorian_date": str(g_date)
+                    })
+        return white_days
 
     def _format_event(
         self,
@@ -47,7 +79,7 @@ class Module(BaseModule):
         description_ar: str = None,
         duration_days: int = 1,
         moon_sighting_note: bool = False,
-        lang: str = "en",
+        lang: str = "en"
     ) -> dict:
         event = {
             "name": name_ar if lang == "ar" else name_en,
@@ -70,12 +102,14 @@ class Module(BaseModule):
         if moon_sighting_note:
             event["moon_sighting_note"] = self.translate({
                 "ar": "قد يختلف التاريخ الفعلي يوماً واحداً بناءً على رؤية الهلال",
-                "en": "Actual date may differ by 1 day based on moon sighting",
+                "en": "Actual date may differ by 1 day based on moon sighting"
             }, lang)
 
         return event
 
-    # ── Main endpoint ──────────────────────────────────────────────────────────
+    # ============================================
+    # MAIN ENDPOINT
+    # ============================================
 
     async def get_events(
         self,
@@ -84,143 +118,165 @@ class Module(BaseModule):
         lang: str = Query("en", description="Language: en or ar"),
         include_weekly: bool = Query(True, description="Include weekly Jumu'ah (Friday prayers)"),
         include_monthly: bool = Query(True, description="Include monthly White Days"),
-        event_type: str = Query(
-            None,
-            description="Filter by type: holidays, months, special_nights, weekly, monthly"
-        ),
+        event_type: str = Query(None, description="Filter by type: holidays, months, special_nights, weekly, monthly")
     ):
         lang = self.get_lang(request, lang)
 
         if year is None:
             year = datetime.now().year
 
-        # Derive Hijri year from mid-year Gregorian date
-        h_year, _, _ = gregorian_to_hijri(date(year, 6, 15))
+        # Get Hijri year for Jan 1
+        h_year, _, _ = self._gregorian_to_hijri(date(year, 6, 15))
         hijri_year = h_year if h_year else 1446
 
-        # ── Holidays ───────────────────────────────────────────────────────────
+        # ============================================
+        # HOLIDAYS
+        # ============================================
         holidays = []
 
+        # Islamic New Year (1 Muharram)
+        new_year_date = self._hijri_to_gregorian(hijri_year, 1, 1)
         holidays.append(self._format_event(
             "Islamic New Year", "رأس السنة الهجرية",
-            hijri_to_gregorian(hijri_year, 1, 1), hijri_year, 1, 1,
+            new_year_date, hijri_year, 1, 1,
             "holiday",
             "Beginning of the Islamic lunar calendar year",
             "بداية السنة الهجرية القمرية",
-            lang=lang,
+            lang=lang
         ))
 
+        # Ashura (10 Muharram)
+        ashura_date = self._hijri_to_gregorian(hijri_year, 1, 10)
         holidays.append(self._format_event(
             "Ashura", "يوم عاشوراء",
-            hijri_to_gregorian(hijri_year, 1, 10), hijri_year, 1, 10,
+            ashura_date, hijri_year, 1, 10,
             "holiday",
             "The 10th of Muharram — a day of fasting",
             "العاشر من محرم — يوم صيام",
-            lang=lang,
+            lang=lang
         ))
 
+        # Isra and Mi'raj (27 Rajab)
+        isra_date = self._hijri_to_gregorian(hijri_year, 7, 27)
         holidays.append(self._format_event(
             "Isra and Mi'raj", "الإسراء والمعراج",
-            hijri_to_gregorian(hijri_year, 7, 27), hijri_year, 7, 27,
+            isra_date, hijri_year, 7, 27,
             "holiday",
             "The Prophet's night journey and ascension to heaven",
             "رحلة النبي الليلية والصعود إلى السماء",
-            lang=lang,
+            lang=lang
         ))
 
+        # Mid Sha'ban (15 Sha'ban)
+        mid_shaban_date = self._hijri_to_gregorian(hijri_year, 8, 15)
         holidays.append(self._format_event(
             "Mid Sha'ban (Laylat al-Bara'ah)", "نصف شعبان (ليلة البراءة)",
-            hijri_to_gregorian(hijri_year, 8, 15), hijri_year, 8, 15,
+            mid_shaban_date, hijri_year, 8, 15,
             "holiday",
             "The 15th of Sha'ban — Night of Forgiveness",
             "الخامس عشر من شعبان — ليلة البراءة",
-            lang=lang,
+            lang=lang
         ))
 
+        # Ramadan Start (1 Ramadan)
+        ramadan_date = self._hijri_to_gregorian(hijri_year, 9, 1)
         holidays.append(self._format_event(
             "Ramadan", "رمضان",
-            hijri_to_gregorian(hijri_year, 9, 1), hijri_year, 9, 1,
+            ramadan_date, hijri_year, 9, 1,
             "holiday",
             "The holy month of fasting",
             "الشهر الفضيل",
             duration_days=30,
             moon_sighting_note=True,
-            lang=lang,
+            lang=lang
         ))
 
+        # Laylat al-Qadr (27 Ramadan — most common opinion)
+        qadr_date = self._hijri_to_gregorian(hijri_year, 9, 27)
         holidays.append(self._format_event(
             "Laylat al-Qadr (Night of Power)", "ليلة القدر",
-            hijri_to_gregorian(hijri_year, 9, 27), hijri_year, 9, 27,
+            qadr_date, hijri_year, 9, 27,
             "special_night",
             "The Night of Power — better than 1000 months (27th Ramadan)",
             "ليلة القدر — خير من ألف شهر (السابع والعشرون من رمضان)",
-            lang=lang,
+            lang=lang
         ))
 
+        # Eid al-Fitr (1 Shawwal)
+        eid_fitr_date = self._hijri_to_gregorian(hijri_year, 10, 1)
         holidays.append(self._format_event(
             "Eid al-Fitr", "عيد الفطر",
-            hijri_to_gregorian(hijri_year, 10, 1), hijri_year, 10, 1,
+            eid_fitr_date, hijri_year, 10, 1,
             "holiday",
             "Festival of Breaking the Fast",
             "عيد الفطر المبارك",
             duration_days=3,
             moon_sighting_note=True,
-            lang=lang,
+            lang=lang
         ))
 
+        # Day of Arafat (9 Dhul Hijjah)
+        arafat_date = self._hijri_to_gregorian(hijri_year, 12, 9)
         holidays.append(self._format_event(
             "Day of Arafat", "يوم عرفة",
-            hijri_to_gregorian(hijri_year, 12, 9), hijri_year, 12, 9,
+            arafat_date, hijri_year, 12, 9,
             "holiday",
             "The Day of Arafat — recommended fasting for non-pilgrims",
             "يوم عرفة — يستحب صيامه لغير الحجاج",
-            lang=lang,
+            lang=lang
         ))
 
+        # Eid al-Adha (10 Dhul Hijjah)
+        eid_adha_date = self._hijri_to_gregorian(hijri_year, 12, 10)
         holidays.append(self._format_event(
             "Eid al-Adha", "عيد الأضحى",
-            hijri_to_gregorian(hijri_year, 12, 10), hijri_year, 12, 10,
+            eid_adha_date, hijri_year, 12, 10,
             "holiday",
             "Festival of Sacrifice",
             "عيد الأضحى المبارك",
             duration_days=4,
             moon_sighting_note=True,
-            lang=lang,
+            lang=lang
         ))
 
+        # Mawlid al-Nabi (12 Rabi al-Awwal)
+        mawlid_date = self._hijri_to_gregorian(hijri_year, 3, 12)
         holidays.append(self._format_event(
             "Mawlid al-Nabi (Prophet's Birthday)", "المولد النبوي الشريف",
-            hijri_to_gregorian(hijri_year, 3, 12), hijri_year, 3, 12,
+            mawlid_date, hijri_year, 3, 12,
             "holiday",
             "Birthday of the Prophet Muhammad ﷺ",
             "ذكرى مولد النبي محمد ﷺ",
-            lang=lang,
+            lang=lang
         ))
 
+        # Sort holidays by date
         holidays = sorted(
             [h for h in holidays if h.get("gregorian_date")],
-            key=lambda x: x["gregorian_date"],
+            key=lambda x: x["gregorian_date"]
         )
 
-        # ── Hijri months ───────────────────────────────────────────────────────
+        # ============================================
+        # HIJRI MONTHS
+        # ============================================
         hijri_month_names = [
-            ("Muharram",       "محرم"),
-            ("Safar",          "صفر"),
-            ("Rabi al-Awwal",  "ربيع الأول"),
-            ("Rabi al-Thani",  "ربيع الثاني"),
-            ("Jumada al-Awwal","جمادى الأولى"),
-            ("Jumada al-Thani","جمادى الثانية"),
-            ("Rajab",          "رجب"),
-            ("Sha'ban",        "شعبان"),
-            ("Ramadan",        "رمضان"),
-            ("Shawwal",        "شوال"),
-            ("Dhul Qa'dah",    "ذو القعدة"),
-            ("Dhul Hijjah",    "ذو الحجة"),
+            ("Muharram", "محرم"),
+            ("Safar", "صفر"),
+            ("Rabi al-Awwal", "ربيع الأول"),
+            ("Rabi al-Thani", "ربيع الثاني"),
+            ("Jumada al-Awwal", "جمادى الأولى"),
+            ("Jumada al-Thani", "جمادى الثانية"),
+            ("Rajab", "رجب"),
+            ("Sha'ban", "شعبان"),
+            ("Ramadan", "رمضان"),
+            ("Shawwal", "شوال"),
+            ("Dhul Qa'dah", "ذو القعدة"),
+            ("Dhul Hijjah", "ذو الحجة"),
         ]
 
         months = []
         for i, (name_en, name_ar) in enumerate(hijri_month_names, 1):
-            start_date = hijri_to_gregorian(hijri_year, i, 1)
+            start_date = self._hijri_to_gregorian(hijri_year, i, 1)
             months.append({
                 "number": i,
                 "name": name_ar if lang == "ar" else name_en,
@@ -231,58 +287,69 @@ class Module(BaseModule):
                 "gregorian_start": str(start_date) if start_date else None,
                 "moon_sighting_note": self.translate({
                     "ar": "بداية الشهر تعتمد على رؤية الهلال",
-                    "en": "Month start depends on moon sighting",
-                }, lang) if i in [9, 10, 12] else None,
+                    "en": "Month start depends on moon sighting"
+                }, lang) if i in [9, 10, 12] else None
             })
 
-        # ── Special nights (last 10 of Ramadan) ───────────────────────────────
+        # ============================================
+        # SPECIAL NIGHTS
+        # ============================================
         special_nights = []
+
+        # Last 10 nights of Ramadan (21-30 Ramadan)
         for day in range(21, 31):
-            night_date = hijri_to_gregorian(hijri_year, 9, day)
+            night_date = self._hijri_to_gregorian(hijri_year, 9, day)
             special_nights.append({
                 "name": self.translate({
                     "ar": f"ليلة {day} رمضان",
-                    "en": f"Night of {day} Ramadan",
+                    "en": f"Night of {day} Ramadan"
                 }, lang),
                 "gregorian_date": str(night_date) if night_date else None,
                 "hijri_date": f"{hijri_year}/09/{day:02d}",
                 "type": "special_night",
                 "description": self.translate({
                     "ar": "من الليالي الفضيلة في العشر الأواخر من رمضان",
-                    "en": "One of the blessed nights in the last 10 days of Ramadan",
+                    "en": "One of the blessed nights in the last 10 days of Ramadan"
                 }, lang),
-                "is_odd": day % 2 != 0,
+                "is_odd": day % 2 != 0
             })
 
+        # Laylat al-Qadr specifically on odd nights
         special_nights_sorted = sorted(
             [n for n in special_nights if n.get("gregorian_date")],
-            key=lambda x: x["gregorian_date"],
+            key=lambda x: x["gregorian_date"]
         )
 
-        # ── Weekly (Jumu'ah) ───────────────────────────────────────────────────
+        # ============================================
+        # WEEKLY (Fridays / Jumu'ah)
+        # ============================================
         weekly = []
         if include_weekly:
-            for friday in get_all_fridays(year):
-                h_y, h_m, h_d = gregorian_to_hijri(friday)
+            fridays = self._get_all_fridays(year)
+            for friday in fridays:
+                h_y, h_m, h_d = self._gregorian_to_hijri(friday)
                 weekly.append({
                     "name": self.translate({
                         "ar": "صلاة الجمعة",
-                        "en": "Jumu'ah (Friday Prayer)",
+                        "en": "Jumu'ah (Friday Prayer)"
                     }, lang),
                     "gregorian_date": str(friday),
                     "hijri_date": f"{h_y}/{h_m:02d}/{h_d:02d}" if h_y else None,
                     "type": "weekly",
-                    "day_of_week": "Friday",
+                    "day_of_week": "Friday"
                 })
 
-        # ── Monthly (White Days) ───────────────────────────────────────────────
+        # ============================================
+        # MONTHLY (White Days)
+        # ============================================
         monthly = []
         if include_monthly:
-            for wd in get_white_days(hijri_year):
+            white_days_raw = self._get_white_days(hijri_year)
+            for wd in white_days_raw:
                 monthly.append({
                     "name": self.translate({
                         "ar": f"الأيام البيض — {wd['hijri_day']} من الشهر",
-                        "en": f"White Days — Day {wd['hijri_day']} of the month",
+                        "en": f"White Days — Day {wd['hijri_day']} of the month"
                     }, lang),
                     "gregorian_date": wd["gregorian_date"],
                     "hijri_date": f"{hijri_year}/{wd['hijri_month']:02d}/{wd['hijri_day']:02d}",
@@ -291,22 +358,26 @@ class Module(BaseModule):
                     "type": "monthly",
                     "description": self.translate({
                         "ar": "يستحب صيام الأيام البيض 13 و14 و15 من كل شهر هجري",
-                        "en": "Recommended fasting on days 13, 14, 15 of each Hijri month",
-                    }, lang),
+                        "en": "Recommended fasting on days 13, 14, 15 of each Hijri month"
+                    }, lang)
                 })
 
-        # ── Response ───────────────────────────────────────────────────────────
+        # ============================================
+        # BUILD RESPONSE
+        # ============================================
         all_events = {
-            "holidays":      holidays,
-            "months":        months,
+            "holidays": holidays,
+            "months": months,
             "special_nights": special_nights_sorted,
-            "weekly":        weekly,
-            "monthly":       monthly,
+            "weekly": weekly,
+            "monthly": monthly
         }
 
+        # Filter by type if requested
         if event_type and event_type in all_events:
             all_events = {event_type: all_events[event_type]}
 
+        # Count total
         total = sum(len(v) for v in all_events.values())
 
         return {
@@ -315,7 +386,7 @@ class Module(BaseModule):
             "total_events": total,
             "calculation_method": self.translate({
                 "ar": "حساب فلكي — قد يختلف يوماً واحداً بناءً على رؤية الهلال",
-                "en": "Astronomical calculation — may differ by 1 day based on moon sighting",
+                "en": "Astronomical calculation — may differ by 1 day based on moon sighting"
             }, lang),
-            "events": all_events,
+            "events": all_events
         }

@@ -8,14 +8,14 @@ client = TestClient(app)
 class TestHijri:
 
     def test_get_hijri_today(self):
-        response = client.get("/api/v1/hijri")
+        response = client.get("/api/v1/hijri/today")
         assert response.status_code == 200
         data = response.json()
         assert "gregorian" in data
         assert "hijri" in data
 
     def test_hijri_response_structure(self):
-        response = client.get("/api/v1/hijri")
+        response = client.get("/api/v1/hijri/today")
         data = response.json()
         assert "date" in data["gregorian"]
         assert "day" in data["gregorian"]
@@ -28,7 +28,7 @@ class TestHijri:
         assert "year" in data["hijri"]
 
     def test_hijri_english(self):
-        response = client.get("/api/v1/hijri", params={"lang": "en"})
+        response = client.get("/api/v1/hijri/today", params={"lang": "en"})
         data = response.json()
         english_months = [
             "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani",
@@ -38,7 +38,7 @@ class TestHijri:
         assert data["hijri"]["month_name"] in english_months
 
     def test_hijri_arabic(self):
-        response = client.get("/api/v1/hijri", params={"lang": "ar"})
+        response = client.get("/api/v1/hijri/today", params={"lang": "ar"})
         data = response.json()
         arabic_months = [
             "محرم", "صفر", "ربيع الأول", "ربيع الثاني",
@@ -87,12 +87,13 @@ class TestHijri:
             assert month["number"] == i
 
     def test_islamic_events(self):
+        # /hijri/events is now served by the islamic_events module (richer format)
         response = client.get("/api/v1/hijri/events")
         assert response.status_code == 200
         data = response.json()
         assert "events" in data
-        assert "total" in data
-        assert data["total"] > 0
+        assert "total_events" in data
+        assert data["total_events"] > 0
 
     def test_islamic_events_specific_year(self):
         response = client.get(
@@ -101,7 +102,8 @@ class TestHijri:
         )
         data = response.json()
         assert data["year"] == 2026
-        assert len(data["events"]) > 0
+        # events is a dict with sections; check at least one section is non-empty
+        assert any(len(v) > 0 for v in data["events"].values())
 
     def test_islamic_events_have_eid(self):
         response = client.get(
@@ -109,11 +111,11 @@ class TestHijri:
             params={"year": 2026}
         )
         data = response.json()
-        event_names = [e["name"] for e in data["events"]]
-        assert any("Eid" in name for name in event_names)
+        holiday_names = [h["name_en"] for h in data["events"]["holidays"]]
+        assert any("Eid" in name for name in holiday_names)
 
     def test_islamic_events_sorted_by_date(self):
         response = client.get("/api/v1/hijri/events")
         data = response.json()
-        dates = [e["gregorian_date"] for e in data["events"]]
+        dates = [h["gregorian_date"] for h in data["events"]["holidays"] if h["gregorian_date"]]
         assert dates == sorted(dates)

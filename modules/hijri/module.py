@@ -43,10 +43,10 @@ class Module(BaseModule):
     ]
 
     def register_routes(self, router: APIRouter):
-        router.add_api_route("/hijri/today",   self.get_hijri_date,     methods=["GET"])
-        router.add_api_route("/hijri/convert", self.convert_date,       methods=["GET"])
-        router.add_api_route("/hijri/months",  self.get_months,         methods=["GET"])
-        router.add_api_route("/hijri/events",  self.get_islamic_events, methods=["GET"])
+        router.add_api_route("/hijri/today",   self.get_hijri_date, methods=["GET"])
+        router.add_api_route("/hijri/convert", self.convert_date,   methods=["GET"])
+        router.add_api_route("/hijri/months",  self.get_months,     methods=["GET"])
+        # /hijri/events is owned by the islamic_events module (richer implementation)
 
     async def get_hijri_date(
         self,
