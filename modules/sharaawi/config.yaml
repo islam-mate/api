@@ -24,6 +24,7 @@ modules:
   islamic_events: true
   zakat: true
   sharaawi: true
+  adhan: true
 
 security:
   auth_enabled: false
