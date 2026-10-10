@@ -6,6 +6,7 @@ from kernel.kernel import Kernel
 from kernel.services.auth import validate_key
 from kernel.services.config_reader import ConfigReader
 from kernel.rate_limiter import limiter, rate_limit_exceeded_handler, is_rate_limited
+from fastapi.staticfiles import StaticFiles
 
 kernel = Kernel()
 kernel.discover()
@@ -15,7 +16,7 @@ app = FastAPI(
     description="Open-source Islamic REST API",
     version="1.0.0"
 )
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 

@@ -1,10 +1,9 @@
-﻿from fastapi import APIRouter, Query, HTTPException
-from datetime import datetime, date
+﻿from fastapi import APIRouter, Query, HTTPException, Request
+from datetime import date as _date, datetime
 from typing import Optional
-import pytz
-
 from base.base_module import BaseModule
-from modules.prayer_times.core.methods import PrayerTimes, CalculationMethod, AsrMethod
+
+from .core.methods import PrayerTimes, CalculationMethod, AsrMethod, AVAILABLE_METHODS
 
 
 class Module(BaseModule):
@@ -13,122 +12,267 @@ class Module(BaseModule):
     dependencies = []
 
     def register_routes(self, router: APIRouter):
-        router.add_api_route("/prayer-times", self.get_prayer_times, methods=["GET"])
-        router.add_api_route("/prayer/next", self.get_next_prayer, methods=["GET"])
-        router.add_api_route("/prayer/month", self.get_prayer_month, methods=["GET"])
-        router.add_api_route("/prayer/methods", self.get_methods, methods=["GET"])
+        router.add_api_route(
+            "/prayer-times",
+            self.get_times,
+            methods=["GET"],
+            summary="Prayer times by coordinates",
+            tags=["Prayer Times"],
+        )
+        router.add_api_route(
+            "/prayer/next",
+            self.get_next_prayer,
+            methods=["GET"],
+            summary="Next upcoming prayer",
+            tags=["Prayer Times"],
+        )
+        router.add_api_route(
+            "/prayer/month",
+            self.get_month,
+            methods=["GET"],
+            summary="Prayer times for a full month",
+            tags=["Prayer Times"],
+        )
+        router.add_api_route(
+            "/prayer/methods",
+            self.get_methods,
+            methods=["GET"],
+            summary="List available calculation methods",
+            tags=["Prayer Times"],
+        )
+        # Backward-compat alias
+        router.add_api_route(
+            "/prayer-times/methods",
+            self.get_methods,
+            methods=["GET"],
+            include_in_schema=False,
+            tags=["Prayer Times"],
+        )
 
-    async def get_prayer_times(
+    # ── Shared helpers ────────────────────────────────────────────────────────
+
+    def _resolve_tz(self, timezone: str):
+        try:
+            import pytz
+            return pytz.timezone(timezone)
+        except Exception:
+            import pytz
+            return pytz.UTC
+
+    def _resolve_coords(self, lat, latitude, lng, longitude):
+        """Accept both short (lat/lng) and long (latitude/longitude) param names."""
+        resolved_lat = lat if lat is not None else latitude
+        resolved_lng = lng if lng is not None else longitude
+        if resolved_lat is None:
+            raise HTTPException(422, detail="lat or latitude is required")
+        if resolved_lng is None:
+            raise HTTPException(422, detail="lng or longitude is required")
+        return resolved_lat, resolved_lng
+
+    def _resolve_date(self, date_str: Optional[str]) -> _date:
+        if date_str is None:
+            return _date.today()
+        try:
+            return _date.fromisoformat(date_str)
+        except (ValueError, AttributeError):
+            raise HTTPException(400, detail=f"Invalid date: '{date_str}'. Use YYYY-MM-DD.")
+
+    def _validate_method(self, method: str) -> str:
+        method = method.upper()
+        if method not in AVAILABLE_METHODS:
+            raise HTTPException(
+                400,
+                detail={"error": f"Unknown method: {method}", "available": AVAILABLE_METHODS},
+            )
+        return method
+
+    def _validate_asr(self, asr: str) -> AsrMethod:
+        asr = asr.upper()
+        try:
+            return AsrMethod[asr]
+        except KeyError:
+            raise HTTPException(400, detail=f"Unknown asr method: {asr}. Use STANDARD or HANAFI.")
+
+    def _labels(self, lang: str) -> dict:
+        return {
+            "en": {
+                "fajr": "Fajr", "sunrise": "Sunrise", "dhuhr": "Dhuhr",
+                "asr": "Asr", "maghrib": "Maghrib", "isha": "Isha",
+            },
+            "ar": {
+                "fajr": "الفجر", "sunrise": "الشروق", "dhuhr": "الظهر",
+                "asr": "العصر", "maghrib": "المغرب", "isha": "العشاء",
+            },
+        }.get(lang, {"fajr": "Fajr", "sunrise": "Sunrise", "dhuhr": "Dhuhr",
+                     "asr": "Asr", "maghrib": "Maghrib", "isha": "Isha"})
+
+    # ── Endpoints ─────────────────────────────────────────────────────────────
+
+    async def get_times(
         self,
-        latitude: float = Query(..., ge=-90, le=90),
-        longitude: float = Query(..., ge=-180, le=180),
-        date: Optional[str] = Query(None, description="YYYY-MM-DD (default: today)"),
-        timezone: str = Query("Africa/Cairo"),
-        method: str = Query("EGYPT"),
-        lang: str = Query("en", description="Language: en or ar")
+        request: Request,
+        # Short names (picker.html) — kept for backward compat
+        lat: Optional[float] = Query(None, ge=-90,  le=90,  description="Latitude (short)"),
+        lng: Optional[float] = Query(None, ge=-180, le=180, description="Longitude (short)"),
+        # Long names (test suite)
+        latitude:  Optional[float] = Query(None, ge=-90,  le=90,  description="Latitude (long)"),
+        longitude: Optional[float] = Query(None, ge=-180, le=180, description="Longitude (long)"),
+        timezone: str          = Query("UTC",      description="IANA timezone, e.g. Africa/Cairo"),
+        method:   str          = Query("EGYPT",    description=f"Calculation method: {', '.join(AVAILABLE_METHODS)}"),
+        asr:      str          = Query("STANDARD", description="Asr method: STANDARD or HANAFI"),
+        lang:     str          = Query("en",       description="Language: en or ar"),
+        date:     Optional[str] = Query(None,      description="Date in YYYY-MM-DD format (default: today)"),
     ):
-        prayer_date = self._parse_date(date)
-        times = self._calculate(latitude, longitude, prayer_date, timezone, method)
-        response = {
-            "date": prayer_date.isoformat(),
-            "location": {"lat": latitude, "lng": longitude},
+        lang = self.get_lang(request, lang)
+        resolved_lat, resolved_lng = self._resolve_coords(lat, latitude, lng, longitude)
+        method    = self._validate_method(method)
+        asr_method = self._validate_asr(asr)
+        target_date = self._resolve_date(date)
+        tz_obj    = self._resolve_tz(timezone)
+        lbl       = self._labels(lang)
+
+        try:
+            pt    = PrayerTimes(CalculationMethod[method], asr_method)
+            times = pt.calc_times(target_date, tz_obj, longitude=resolved_lng, latitude=resolved_lat)
+        except Exception as exc:
+            raise HTTPException(500, detail=str(exc))
+
+        prayers_order = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
+
+        return {
+            "date":     target_date.isoformat(),
+            "method":   method,
+            "asr":      asr.upper(),
             "timezone": timezone,
-            "method": method,
-            "sunrise": times["sunrise"].strftime("%H:%M"),
+            "location": {"lat": round(resolved_lat, 6), "lng": round(resolved_lng, 6)},
+            "sunrise":  times["sunrise"].strftime("%H:%M"),
             "prayers": [
-                {"name": self.translate({"en": "Fajr", "ar": "الفجر"}, lang), "time": times["fajr"].strftime("%H:%M")},
-                {"name": self.translate({"en": "Dhuhr", "ar": "الظهر"}, lang), "time": times["dhuhr"].strftime("%H:%M")},
-                {"name": self.translate({"en": "Asr", "ar": "العصر"}, lang), "time": times["asr"].strftime("%H:%M")},
-                {"name": self.translate({"en": "Maghrib", "ar": "المغرب"}, lang), "time": times["maghrib"].strftime("%H:%M")},
-                {"name": self.translate({"en": "Isha", "ar": "العشاء"}, lang), "time": times["isha"].strftime("%H:%M")},
-            ]
+                {"key": key, "name": lbl[key], "time": times[key].strftime("%H:%M")}
+                for key in prayers_order
+            ],
         }
-        self.logger.info(f"Prayer times requested: {latitude},{longitude} [{method}]")
-        return response
 
     async def get_next_prayer(
         self,
-        latitude: float = Query(..., ge=-90, le=90),
-        longitude: float = Query(..., ge=-180, le=180),
-        timezone: str = Query("Africa/Cairo"),
-        method: str = Query("EGYPT"),
-        lang: str = Query("en")
+        request: Request,
+        lat:       Optional[float] = Query(None, ge=-90,  le=90),
+        lng:       Optional[float] = Query(None, ge=-180, le=180),
+        latitude:  Optional[float] = Query(None, ge=-90,  le=90),
+        longitude: Optional[float] = Query(None, ge=-180, le=180),
+        timezone:  str = Query("UTC"),
+        method:    str = Query("EGYPT"),
+        asr:       str = Query("STANDARD"),
+        lang:      str = Query("en"),
     ):
-        tz = pytz.timezone(timezone)
-        now = datetime.now(tz)
-        times = self._calculate(latitude, longitude, now.date(), timezone, method)
-        prayer_names = {
-            "fajr": {"en": "Fajr", "ar": "الفجر"},
-            "dhuhr": {"en": "Dhuhr", "ar": "الظهر"},
-            "asr": {"en": "Asr", "ar": "العصر"},
-            "maghrib": {"en": "Maghrib", "ar": "المغرب"},
-            "isha": {"en": "Isha", "ar": "العشاء"},
-        }
-        for prayer in ["fajr", "dhuhr", "asr", "maghrib", "isha"]:
-            prayer_time = times[prayer]
-            if prayer_time > now:
-                diff = prayer_time - now
-                minutes = int(diff.total_seconds() / 60)
-                return {
-                    "next_prayer": self.translate(prayer_names[prayer], lang),
-                    "time": prayer_time.strftime("%H:%M"),
-                    "in_minutes": minutes
-                }
-        return {"next_prayer": self.translate({"en": "Fajr", "ar": "الفجر"}, lang), "message": "Next prayer is tomorrow's Fajr"}
+        lang = self.get_lang(request, lang)
+        resolved_lat, resolved_lng = self._resolve_coords(lat, latitude, lng, longitude)
+        method     = self._validate_method(method)
+        asr_method = self._validate_asr(asr)
+        tz_obj     = self._resolve_tz(timezone)
+        lbl        = self._labels(lang)
+        today      = _date.today()
 
-    async def get_prayer_month(
+        try:
+            pt    = PrayerTimes(CalculationMethod[method], asr_method)
+            times = pt.calc_times(today, tz_obj, longitude=resolved_lng, latitude=resolved_lat)
+        except Exception as exc:
+            raise HTTPException(500, detail=str(exc))
+
+        import pytz
+        now = datetime.now(tz_obj if hasattr(tz_obj, "localize") else pytz.UTC)
+
+        prayers_order = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
+        next_prayer   = None
+
+        for key in prayers_order:
+            if times[key] > now:
+                next_prayer = {
+                    "key":      key,
+                    "name":     lbl[key],
+                    "time":     times[key].strftime("%H:%M"),
+                    "tomorrow": False,
+                }
+                break
+
+        if next_prayer is None:
+            # Past Isha — next is Fajr tomorrow
+            from datetime import timedelta
+            tomorrow = today + timedelta(days=1)
+            times_tomorrow = pt.calc_times(tomorrow, tz_obj, longitude=resolved_lng, latitude=resolved_lat)
+            next_prayer = {
+                "key":      "fajr",
+                "name":     lbl["fajr"],
+                "time":     times_tomorrow["fajr"].strftime("%H:%M"),
+                "tomorrow": True,
+            }
+
+        return {
+            "date":         today.isoformat(),
+            "next_prayer":  next_prayer,
+            "time":         next_prayer["time"],
+        }
+
+    async def get_month(
         self,
-        latitude: float = Query(..., ge=-90, le=90),
-        longitude: float = Query(..., ge=-180, le=180),
-        month: int = Query(..., ge=1, le=12),
-        year: int = Query(..., ge=2000, le=2100),
-        timezone: str = Query("Africa/Cairo"),
-        method: str = Query("EGYPT")
+        request: Request,
+        lat:       Optional[float] = Query(None, ge=-90,  le=90),
+        lng:       Optional[float] = Query(None, ge=-180, le=180),
+        latitude:  Optional[float] = Query(None, ge=-90,  le=90),
+        longitude: Optional[float] = Query(None, ge=-180, le=180),
+        timezone:  str = Query("UTC"),
+        method:    str = Query("EGYPT"),
+        asr:       str = Query("STANDARD"),
+        lang:      str = Query("en"),
+        month:     int = Query(..., ge=1, le=12,   description="Month (1–12)"),
+        year:      int = Query(..., ge=1900, le=2100, description="Year"),
     ):
         import calendar
-        num_days = calendar.monthrange(year, month)[1]
-        days = []
-        for day in range(1, num_days + 1):
-            current_date = date(year, month, day)
-            times = self._calculate(latitude, longitude, current_date, timezone, method)
-            days.append({
-                "date": current_date.isoformat(),
-                "fajr": times["fajr"].strftime("%H:%M"),
-                "sunrise": times["sunrise"].strftime("%H:%M"),
-                "dhuhr": times["dhuhr"].strftime("%H:%M"),
-                "asr": times["asr"].strftime("%H:%M"),
-                "maghrib": times["maghrib"].strftime("%H:%M"),
-                "isha": times["isha"].strftime("%H:%M"),
-            })
-        return {"month": month, "year": year, "location": {"lat": latitude, "lng": longitude}, "days": days}
 
-    async def get_methods(self):
+        lang = self.get_lang(request, lang)
+        resolved_lat, resolved_lng = self._resolve_coords(lat, latitude, lng, longitude)
+        method     = self._validate_method(method)
+        asr_method = self._validate_asr(asr)
+        tz_obj     = self._resolve_tz(timezone)
+        lbl        = self._labels(lang)
+        prayers_order = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
+
+        try:
+            pt           = PrayerTimes(CalculationMethod[method], asr_method)
+            days_in_month = calendar.monthrange(year, month)[1]
+            days = []
+            for day in range(1, days_in_month + 1):
+                d     = _date(year, month, day)
+                times = pt.calc_times(d, tz_obj, longitude=resolved_lng, latitude=resolved_lat)
+                days.append({
+                    "date":    d.isoformat(),
+                    "sunrise": times["sunrise"].strftime("%H:%M"),
+                    "prayers": [
+                        {"key": key, "name": lbl[key], "time": times[key].strftime("%H:%M")}
+                        for key in prayers_order
+                    ],
+                })
+        except Exception as exc:
+            raise HTTPException(500, detail=str(exc))
+
         return {
-            "methods": [
-                {"key": "EGYPT", "name": "Egyptian General Authority of Survey"},
-                {"key": "MWL", "name": "Muslim World League"},
-                {"key": "ISNA", "name": "Islamic Society of North America"},
-                {"key": "MAKKAH", "name": "Umm al-Qura University, Makkah"},
-                {"key": "KARACHI", "name": "University of Islamic Sciences, Karachi"},
-                {"key": "TEHRAN", "name": "Institute of Geophysics, University of Tehran"},
-                {"key": "JAFARI", "name": "Shia Ithna Ashari, Leva Research Institute, Qum"},
-            ]
+            "month":    month,
+            "year":     year,
+            "method":   method,
+            "timezone": timezone,
+            "location": {"lat": round(resolved_lat, 6), "lng": round(resolved_lng, 6)},
+            "days":     days,
         }
 
-    def _parse_date(self, date_str: Optional[str]):
-        if date_str:
-            try:
-                return datetime.strptime(date_str, "%Y-%m-%d").date()
-            except ValueError:
-                raise HTTPException(400, "Invalid date format. Use YYYY-MM-DD")
-        return datetime.now().date()
-
-    def _calculate(self, lat, lng, prayer_date, timezone_str, method_str):
-        try:
-            tz = pytz.timezone(timezone_str)
-            pt = PrayerTimes(CalculationMethod[method_str], AsrMethod.STANDARD)
-            return pt.calc_times(prayer_date, tz, lng, lat)
-        except KeyError:
-            raise HTTPException(400, f"Invalid method: {method_str}")
-        except Exception as e:
-            raise HTTPException(500, f"Calculation error: {str(e)}")
+    async def get_methods(self, request: Request):
+        return {
+            "methods": AVAILABLE_METHODS,
+            "descriptions": {
+                "MWL":     "Muslim World League",
+                "ISNA":    "Islamic Society of North America",
+                "EGYPT":   "Egyptian General Authority of Survey",
+                "MAKKAH":  "Umm al-Qura, Makkah (90 min after Maghrib for Isha)",
+                "KARACHI": "University of Islamic Sciences, Karachi",
+                "TEHRAN":  "Institute of Geophysics, Tehran",
+                "JAFARI":  "Shia Ithna-Ashari, Leva Research Institute, Qum",
+            },
+        }

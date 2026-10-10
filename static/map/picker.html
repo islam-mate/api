@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Location Picker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #232636;
+            --border: #2e3248;
+            --accent: #4f8ef7;
+            --accent-hover: #6ba3ff;
+            --text: #e8eaf0;
+            --text-muted: #8a8fa8;
+            --danger: #e05c5c;
+            --success: #3ecf8e;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        /* RTL support */
+        body[dir="rtl"] {
+            font-family: 'Segoe UI', 'Noto Kufi Arabic', 'Arabic Typesetting', Tahoma, sans-serif;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* ── TOP BAR ── */
+        #topbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        #search-wrap {
+            flex: 1;
+            position: relative;
+        }
+
+        #search-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+        }
+
+        body[dir="ltr"] #search-icon {
+            left: 10px;
+        }
+
+        body[dir="rtl"] #search-icon {
+            right: 10px;
+        }
+
+        #search {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        body[dir="ltr"] #search {
+            padding: 9px 10px 9px 34px;
+        }
+
+        body[dir="rtl"] #search {
+            padding: 9px 34px 9px 10px;
+            text-align: right;
+        }
+
+        #search:focus {
+            border-color: var(--accent);
+        }
+
+        #search::placeholder {
+            color: var(--text-muted);
+        }
+
+        #clear-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            display: none;
+            line-height: 1;
+        }
+
+        body[dir="ltr"] #clear-btn {
+            right: 6px;
+        }
+
+        body[dir="rtl"] #clear-btn {
+            left: 6px;
+        }
+
+        #lang-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        #lang-btn:hover {
+            border-color: var(--accent);
+            background: var(--surface);
+        }
+
+        /* ── AUTOCOMPLETE ── */
+        #results {
+            position: absolute;
+            top: calc(100% + 4px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow-y: auto;
+            max-height: 240px;
+            z-index: 2000;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        body[dir="ltr"] #results {
+            left: 0;
+            right: 52px;
+        }
+
+        body[dir="rtl"] #results {
+            right: 0;
+            left: 52px;
+        }
+
+        .result-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            transition: background 0.15s;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item:hover {
+            background: var(--surface2);
+        }
+
+        .result-icon {
+            color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .result-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-main {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .result-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .results-loading,
+        .results-empty {
+            padding: 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ── MAP ── */
+        #map {
+            flex: 1;
+            z-index: 1;
+        }
+
+        /* Leaflet dark overrides */
+        .leaflet-tile {
+            filter: brightness(0.75) saturate(0.7);
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(15, 17, 23, 0.8) !important;
+            color: #555 !important;
+            font-size: 10px !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: #4f8ef7 !important;
+        }
+
+        .leaflet-control-zoom a {
+            background: var(--surface) !important;
+            color: var(--text) !important;
+            border-color: var(--border) !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: var(--surface2) !important;
+        }
+
+        /* Custom pin marker */
+        .pin-marker {
+            position: relative;
+            width: 36px;
+            height: 36px;
+        }
+
+        .pin-marker svg {
+            width: 36px;
+            height: 36px;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+        }
+
+        /* ── BOTTOM PANEL ── */
+        #bottom {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 12px 14px;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        #location-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            min-height: 36px;
+        }
+
+        #location-icon {
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        #location-text {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.4;
+            min-width: 0;
+        }
+
+        #location-text.placeholder {
+            color: var(--text-muted);
+        }
+
+        #coords-text {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        #confirm-btn {
+            width: 100%;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            padding: 11px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        #confirm-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        #confirm-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        /* ── MY LOCATION FAB ── */
+        #my-loc-btn {
+            position: absolute;
+            bottom: 110px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            z-index: 900;
+            color: var(--text-muted);
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        body[dir="ltr"] #my-loc-btn {
+            right: 12px;
+        }
+
+        body[dir="rtl"] #my-loc-btn {
+            left: 12px;
+        }
+
+        #my-loc-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        #my-loc-btn.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── TOAST ── */
+        #toast {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 8px 14px;
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── PRAYER PANEL ── */
+        #prayer-panel {
+            display: none;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 12px 14px;
+            flex-shrink: 0;
+        }
+
+        #prayer-panel.show {
+            display: block;
+        }
+
+        #prayer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        #prayer-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        #prayer-date {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        #prayer-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        .prayer-cell {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 7px 4px;
+            text-align: center;
+        }
+
+        .prayer-cell.next-prayer {
+            border-color: var(--accent);
+            background: rgba(79, 142, 247, 0.08);
+        }
+
+        .prayer-name {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        .prayer-time {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .prayer-cell.next-prayer .prayer-time {
+            color: var(--accent);
+        }
+
+        #prayer-loading {
+            text-align: center;
+            padding: 10px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        #prayer-error {
+            display: none;
+            text-align: center;
+            padding: 8px;
+            color: var(--danger);
+            font-size: 12px;
+        }
+
+        /* ── PICKED OVERLAY ── */
+        #picked-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #picked-overlay.show {
+            display: flex;
+        }
+
+        #picked-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 20px 20px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: var(--shadow);
+        }
+
+        #picked-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #picked-card .field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        #picked-card .field:last-of-type {
+            border-bottom: none;
+        }
+
+        #picked-card .field-label {
+            color: var(--text-muted);
+        }
+
+        #picked-card .field-val {
+            font-weight: 600;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        #picked-card .json-block {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #7dd3fc;
+            margin: 14px 0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        #picked-card .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        #copy-btn {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            padding: 9px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        #copy-btn:hover {
+            border-color: var(--accent);
+        }
+
+        #close-overlay-btn {
+            flex: 1;
+            background: var(--accent);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            padding: 9px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #close-overlay-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* ── SPINNER ── */
+        .spin {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body dir="ltr">
+    <div id="app">
+        <div id="topbar">
+            <div id="search-wrap">
+                <span id="search-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                </span>
+                <input id="search" type="text" autocomplete="off" autocorrect="off" spellcheck="false" />
+                <button id="clear-btn" aria-label="Clear">✕</button>
+                <div id="results"></div>
+            </div>
+            <button id="lang-btn">AR</button>
+        </div>
+
+        <div id="map"></div>
+
+        <button id="my-loc-btn" title="My location">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                <circle cx="12" cy="12" r="9" stroke-dasharray="none" opacity="0.3" />
+            </svg>
+        </button>
+
+        <div id="prayer-panel">
+            <div id="prayer-header">
+                <span id="prayer-title"></span>
+                <span id="prayer-date"></span>
+            </div>
+            <div id="prayer-loading"><span class="spin"></span></div>
+            <div id="prayer-error"></div>
+            <div id="prayer-grid" style="display:none"></div>
+        </div>
+
+        <div id="bottom">
+            <div id="location-row">
+                <span id="location-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                </span>
+                <div style="flex:1; min-width:0;">
+                    <div id="location-text" class="placeholder"></div>
+                    <div id="coords-text"></div>
+                </div>
+            </div>
+            <button id="confirm-btn" disabled></button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <div id="picked-overlay">
+        <div id="picked-card">
+            <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Location Confirmed
+            </h3>
+            <div class="field"><span class="field-label">City</span><span class="field-val" id="ov-city">—</span></div>
+            <div class="field"><span class="field-label">Country</span><span class="field-val" id="ov-country">—</span>
+            </div>
+            <div class="field"><span class="field-label">Latitude</span><span class="field-val" id="ov-lat">—</span>
+            </div>
+            <div class="field"><span class="field-label">Longitude</span><span class="field-val" id="ov-lng">—</span>
+            </div>
+            <div class="json-block" id="ov-json"></div>
+            <div class="btn-row">
+                <button id="copy-btn">📋 Copy JSON</button>
+                <button id="close-overlay-btn">✕ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // ────────────────────────────────────────────────────────
+        // i18n
+        // ────────────────────────────────────────────────────────
+        const i18n = {
+            en: {
+                search_placeholder: "Search city or address…",
+                searching: "Searching…",
+                no_results: "No results found",
+                confirm: "Confirm Location",
+                tap_hint: "Tap on the map to place a pin",
+                loc_loading: "Getting your location…",
+                loc_error: "Location access denied",
+                geocode_error: "Could not get address",
+                coords_label: (lat, lng) => `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                drag_hint: "Drag the pin to adjust",
+                prayer_title: "Today's Prayer Times",
+                prayer_error: "Could not load prayer times",
+                prayers: { fajr: "Fajr", sunrise: "Sunrise", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha" }
+            },
+            ar: {
+                search_placeholder: "ابحث عن مدينة أو عنوان…",
+                searching: "جارٍ البحث…",
+                no_results: "لم يُعثر على نتائج",
+                confirm: "تأكيد الموقع",
+                tap_hint: "انقر على الخريطة لوضع الدبوس",
+                loc_loading: "جارٍ تحديد موقعك…",
+                loc_error: "تم رفض الوصول إلى الموقع",
+                geocode_error: "تعذّر الحصول على العنوان",
+                coords_label: (lat, lng) => `${lat.toFixed(6)}، ${lng.toFixed(6)}`,
+                drag_hint: "اسحب الدبوس لضبط الموقع",
+                prayer_title: "مواقيت الصلاة اليوم",
+                prayer_error: "تعذّر تحميل مواقيت الصلاة",
+                prayers: { fajr: "الفجر", sunrise: "الشروق", dhuhr: "الظهر", asr: "العصر", maghrib: "المغرب", isha: "العشاء" }
+            }
+        };
+
+        // ────────────────────────────────────────────────────────
+        // State
+        // ────────────────────────────────────────────────────────
+        let lang = "en";
+        let marker = null;
+        let geocodeTimer = null;
+        let searchTimer = null;
+        let selectedLocation = null; // { lat, lng, city, country }
+
+        // ────────────────────────────────────────────────────────
+        // URL params
+        // ────────────────────────────────────────────────────────
+        const params = new URLSearchParams(location.search);
+        const initLat = parseFloat(params.get("lat")) || null;
+        const initLng = parseFloat(params.get("lng")) || null;
+        const initLang = params.get("lang") === "ar" ? "ar" : "en";
+        // API base: ?api=https://example.com  OR same origin
+        const apiBase = (params.get("api") || "").replace(/\/$/, "") || "";
+
+        // ────────────────────────────────────────────────────────
+        // DOM refs
+        // ────────────────────────────────────────────────────────
+        const searchEl = document.getElementById("search");
+        const clearBtn = document.getElementById("clear-btn");
+        const resultsEl = document.getElementById("results");
+        const langBtn = document.getElementById("lang-btn");
+        const locationText = document.getElementById("location-text");
+        const coordsText = document.getElementById("coords-text");
+        const confirmBtn = document.getElementById("confirm-btn");
+        const myLocBtn = document.getElementById("my-loc-btn");
+        const toastEl = document.getElementById("toast");
+
+        // ────────────────────────────────────────────────────────
+        // Language switch
+        // ────────────────────────────────────────────────────────
+        function setLang(l) {
+            lang = l;
+            document.documentElement.lang = l;
+            document.body.dir = l === "ar" ? "rtl" : "ltr";
+            langBtn.textContent = l === "ar" ? "EN" : "AR";
+            searchEl.placeholder = i18n[l].search_placeholder;
+            confirmBtn.textContent = i18n[l].confirm;
+            if (!selectedLocation) {
+                locationText.textContent = i18n[l].tap_hint;
+            } else {
+                updateLocationDisplay(selectedLocation);
+            }
+        }
+
+        // ────────────────────────────────────────────────────────
+        // Map init
+        // ────────────────────────────────────────────────────────
+        const defaultCenter = (initLat && initLng) ? [initLat, initLng] : [21.3891, 39.8579]; // Makkah default
+        const defaultZoom = (initLat && initLng) ? 13 : 5;
+
+        const map = L.map("map", {
+            center: defaultCenter,
+            zoom: defaultZoom,
+            zoomControl: true,
+            attributionControl: true
+        });
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Custom pin icon
+        const pinIcon = L.divIcon({
+            className: "",
+            html: `<div class="pin-marker">
+    <svg viewBox="0 0 36 48" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z" fill="#4f8ef7"/>
+      <circle cx="18" cy="18" r="8" fill="white" opacity="0.95"/>
+      <circle cx="18" cy="18" r="4" fill="#4f8ef7"/>
+    </svg>
+  </div>`,
+            iconSize: [36, 48],
+            iconAnchor: [18, 48],
+            popupAnchor: [0, -48]
+        });
+
+        // ────────────────────────────────────────────────────────
+        // Place / update marker
+        // ────────────────────────────────────────────────────────
+        function placeMarker(lat, lng) {
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng], {
+                    icon: pinIcon,
+                    draggable: true
+                }).addTo(map);
+
+                marker.on("dragend", () => {
+                    const pos = marker.getLatLng();
+                    scheduleGeocode(pos.lat, pos.lng);
+                });
+            }
+
+            scheduleGeocode(lat, lng);
+        }
+
+        function scheduleGeocode(lat, lng) {
+            clearTimeout(geocodeTimer);
+            coordsText.textContent = i18n[lang].coords_label(lat, lng);
+            locationText.textContent = "…";
+            locationText.classList.remove("placeholder");
+            selectedLocation = null;
+            confirmBtn.disabled = true;
+
+            geocodeTimer = setTimeout(() => reverseGeocode(lat, lng), 400);
+        }
+
+        // ────────────────────────────────────────────────────────
+        // Map click
+        // ────────────────────────────────────────────────────────
+        map.on("click", (e) => {
+            placeMarker(e.latlng.lat, e.latlng.lng);
+            closeResults();
+        });
+
+        // ────────────────────────────────────────────────────────
+        // Reverse geocode (Nominatim)
+        // ────────────────────────────────────────────────────────
+        async function reverseGeocode(lat, lng) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${lang}`;
+                const res = await fetch(url, { headers: { "Accept-Language": lang } });
+                const data = await res.json();
+
+                const addr = data.address || {};
+                const city = addr.city || addr.town || addr.village || addr.county || addr.state || "";
+                const country = addr.country || "";
+                const display = data.display_name || "";
+                const shortLabel = city ? (country ? `${city}, ${country}` : city) : (display.split(",").slice(0, 2).join(", "));
+
+                selectedLocation = { lat, lng, city, country, display };
+                saveToStorage(selectedLocation);
+                updateLocationDisplay({ lat, lng, city, country, display });
+                confirmBtn.disabled = false;
+
+            } catch (err) {
+                locationText.textContent = i18n[lang].geocode_error;
+                coordsText.textContent = i18n[lang].coords_label(lat, lng);
+                // Still allow confirm with coords only
+                selectedLocation = { lat, lng, city: "", country: "" };
+                confirmBtn.disabled = false;
+            }
+        }
+
+        function updateLocationDisplay(loc) {
+            const label = loc.city
+                ? (loc.country ? `${loc.city}, ${loc.country}` : loc.city)
+                : (loc.display ? loc.display.split(",").slice(0, 2).join(", ") : "");
+            locationText.textContent = label || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+            coordsText.textContent = i18n[lang].coords_label(loc.lat, loc.lng);
+        }
+
+        // ────────────────────────────────────────────────────────
+        // Search (Nominatim)
+        // ────────────────────────────────────────────────────────
+        searchEl.addEventListener("input", () => {
+            const q = searchEl.value.trim();
+            clearBtn.style.display = q ? "block" : "none";
+            clearTimeout(searchTimer);
+            if (!q) { closeResults(); return; }
+            searchTimer = setTimeout(() => searchLocation(q), 450);
+        });
+
+        async function searchLocation(q) {
+            showResults(`<div class="results-loading"><span class="spin"></span>&nbsp; ${i18n[lang].searching}</div>`);
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&accept-language=${lang}`;
+                const res = await fetch(url, { headers: { "Accept-Language": lang } });
+                const data = await res.json();
+
+                if (!data.length) {
+                    showResults(`<div class="results-empty">${i18n[lang].no_results}</div>`);
+                    return;
+                }
+
+                const html = data.map(item => {
+                    const parts = item.display_name.split(",");
+                    const main = parts[0].trim();
+                    const sub = parts.slice(1, 3).join(",").trim();
+                    return `<div class="result-item" data-lat="${item.lat}" data-lng="${item.lon}"
+                   data-display="${escAttr(item.display_name)}"
+                   data-type="${escAttr(item.type || "")}">
+        <span class="result-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        </span>
+        <div class="result-text">
+          <div class="result-main">${escHtml(main)}</div>
+          ${sub ? `<div class="result-sub">${escHtml(sub)}</div>` : ""}
+        </div>
+      </div>`;
+                }).join("");
+
+                showResults(html);
+
+                resultsEl.querySelectorAll(".result-item").forEach(el => {
+                    el.addEventListener("click", () => {
+                        const lat = parseFloat(el.dataset.lat);
+                        const lng = parseFloat(el.dataset.lng);
+                        placeMarker(lat, lng);
+                        map.setView([lat, lng], 14, { animate: true });
+                        searchEl.value = el.querySelector(".result-main").textContent;
+                        closeResults();
+                    });
+                });
+
+            } catch {
+                showResults(`<div class="results-empty">${i18n[lang].no_results}</div>`);
+            }
+        }
+
+        function showResults(html) {
+            resultsEl.innerHTML = html;
+            resultsEl.style.display = "block";
+        }
+
+        function closeResults() {
+            resultsEl.style.display = "none";
+        }
+
+        clearBtn.addEventListener("click", () => {
+            searchEl.value = "";
+            clearBtn.style.display = "none";
+            closeResults();
+            searchEl.focus();
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!document.getElementById("search-wrap").contains(e.target)) closeResults();
+        });
+
+        // ────────────────────────────────────────────────────────
+        // My location
+        // ────────────────────────────────────────────────────────
+        myLocBtn.addEventListener("click", () => {
+            if (!navigator.geolocation) { showToast(i18n[lang].loc_error); return; }
+            myLocBtn.classList.add("loading");
+            showToast(i18n[lang].loc_loading);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    myLocBtn.classList.remove("loading");
+                    const { latitude: lat, longitude: lng } = pos.coords;
+                    map.setView([lat, lng], 14, { animate: true });
+                    placeMarker(lat, lng);
+                },
+                () => {
+                    myLocBtn.classList.remove("loading");
+                    showToast(i18n[lang].loc_error);
+                },
+                { timeout: 8000 }
+            );
+        });
+
+        // ────────────────────────────────────────────────────────
+        // Prayer times
+        // ────────────────────────────────────────────────────────
+        const prayerPanel = document.getElementById("prayer-panel");
+        const prayerGrid = document.getElementById("prayer-grid");
+        const prayerLoading = document.getElementById("prayer-loading");
+        const prayerError = document.getElementById("prayer-error");
+        const prayerTitle = document.getElementById("prayer-title");
+        const prayerDate = document.getElementById("prayer-date");
+
+        // Keys shown in the 6-cell grid (sunrise added in CSS below)
+        const PRAYER_KEYS = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
+
+        async function fetchPrayerTimes(lat, lng) {
+            // Show panel with loading state
+            prayerPanel.classList.add("show");
+            prayerLoading.style.display = "block";
+            prayerError.style.display = "none";
+            prayerGrid.style.display = "none";
+            prayerTitle.textContent = i18n[lang].prayer_title;
+
+            const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return "UTC"; } })();
+            const url = `${apiBase}/api/v1/prayer-times?lat=${lat}&lng=${lng}&timezone=${encodeURIComponent(tz)}&lang=${lang}`;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                // Update date label
+                prayerDate.textContent = data.date || "";
+
+                // Build cells — 6 items: fajr + sunrise + dhuhr + asr + maghrib + isha
+                const allItems = [
+                    { key: "fajr", name: i18n[lang].prayers.fajr, time: "" },
+                    { key: "sunrise", name: i18n[lang].prayers.sunrise, time: data.sunrise || "—" },
+                    { key: "dhuhr", name: i18n[lang].prayers.dhuhr, time: "" },
+                    { key: "asr", name: i18n[lang].prayers.asr, time: "" },
+                    { key: "maghrib", name: i18n[lang].prayers.maghrib, time: "" },
+                    { key: "isha", name: i18n[lang].prayers.isha, time: "" },
+                ];
+
+                // Fill times from API prayers array
+                if (Array.isArray(data.prayers)) {
+                    data.prayers.forEach(p => {
+                        const item = allItems.find(i => i.key === p.key);
+                        if (item) item.time = p.time;
+                    });
+                }
+
+                // Determine next prayer
+                const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+                const prayerMins = allItems.map(item => {
+                    const [hh, mm] = (item.time || "00:00").split(":").map(Number);
+                    return hh * 60 + (mm || 0);
+                });
+                let nextIdx = prayerMins.findIndex(m => m > nowMins);
+                if (nextIdx === -1) nextIdx = 0; // past Isha → Fajr tomorrow
+
+                prayerGrid.innerHTML = allItems.map((item, idx) => `
+      <div class="prayer-cell${idx === nextIdx ? " next-prayer" : ""}">
+        <div class="prayer-name">${item.name}</div>
+        <div class="prayer-time">${item.time || "—"}</div>
+      </div>`).join("");
+
+                prayerLoading.style.display = "none";
+                prayerGrid.style.display = "grid";
+
+            } catch (err) {
+                prayerLoading.style.display = "none";
+                prayerError.textContent = i18n[lang].prayer_error;
+                prayerError.style.display = "block";
+            }
+        }
+
+        // ────────────────────────────────────────────────────────
+        // Confirm
+        // ────────────────────────────────────────────────────────
+        confirmBtn.addEventListener("click", () => {
+            if (!selectedLocation) return;
+            const payload = {
+                lat: parseFloat(selectedLocation.lat.toFixed(7)),
+                lng: parseFloat(selectedLocation.lng.toFixed(7)),
+                city: selectedLocation.city || "",
+                country: selectedLocation.country || ""
+            };
+
+            let delivered = false;
+
+            // Flutter WebView
+            if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler("locationPicked", payload);
+                delivered = true;
+            }
+
+            // Standard postMessage — parent iframe / Flutter WebView / React Native
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: "locationPicked", ...payload }, "*");
+                    delivered = true;
+                }
+            } catch (_) { }
+
+            try {
+                if (window.top !== window) {
+                    window.top.postMessage({ type: "locationPicked", ...payload }, "*");
+                    delivered = true;
+                }
+            } catch (_) { }
+
+            // Standalone browser fallback — show result overlay
+            if (!delivered) {
+                showPickedOverlay(payload);
+            }
+
+            // Fetch & display prayer times for the confirmed location
+            fetchPrayerTimes(payload.lat, payload.lng);
+        });
+
+        // ────────────────────────────────────────────────────────
+        // Language button
+        // ────────────────────────────────────────────────────────
+        langBtn.addEventListener("click", () => {
+            setLang(lang === "en" ? "ar" : "en");
+            if (selectedLocation) updateLocationDisplay(selectedLocation);
+        });
+
+        // ────────────────────────────────────────────────────────
+        // Toast
+        // ────────────────────────────────────────────────────────
+        let toastTimer;
+        function showToast(msg, duration = 2500) {
+            toastEl.textContent = msg;
+            toastEl.classList.add("show");
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.remove("show"), duration);
+        }
+
+        // ────────────────────────────────────────────────────────
+        // Helpers
+        // ────────────────────────────────────────────────────────
+        // ────────────────────────────────────────────────────────
+        // Standalone picked overlay
+        // ────────────────────────────────────────────────────────
+        const pickedOverlay = document.getElementById("picked-overlay");
+        const copyBtn = document.getElementById("copy-btn");
+        const closeOverlayBtn = document.getElementById("close-overlay-btn");
+
+        function showPickedOverlay(payload) {
+            document.getElementById("ov-city").textContent = payload.city || "—";
+            document.getElementById("ov-country").textContent = payload.country || "—";
+            document.getElementById("ov-lat").textContent = payload.lat;
+            document.getElementById("ov-lng").textContent = payload.lng;
+            document.getElementById("ov-json").textContent = JSON.stringify(payload, null, 2);
+            pickedOverlay.classList.add("show");
+        }
+
+        copyBtn.addEventListener("click", () => {
+            const json = document.getElementById("ov-json").textContent;
+            navigator.clipboard.writeText(json).then(() => {
+                copyBtn.textContent = "✓ Copied!";
+                setTimeout(() => { copyBtn.textContent = "📋 Copy JSON"; }, 2000);
+            }).catch(() => {
+                // fallback
+                const ta = document.createElement("textarea");
+                ta.value = json;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+                copyBtn.textContent = "✓ Copied!";
+                setTimeout(() => { copyBtn.textContent = "📋 Copy JSON"; }, 2000);
+            });
+        });
+
+        closeOverlayBtn.addEventListener("click", () => {
+            pickedOverlay.classList.remove("show");
+        });
+
+        function escHtml(s) {
+            return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+        function escAttr(s) {
+            return s.replace(/"/g, "&quot;");
+        }
+
+        // ────────────────────────────────────────────────────────
+        // localStorage persistence
+        // ────────────────────────────────────────────────────────
+        const LS_KEY = "islam_mate_location";
+
+        function saveToStorage(loc) {
+            try {
+                localStorage.setItem(LS_KEY, JSON.stringify(loc));
+            } catch (_) { }
+        }
+
+        function loadFromStorage() {
+            try {
+                const raw = localStorage.getItem(LS_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (_) { return null; }
+        }
+
+        // Patch confirm to also save
+        const _origConfirm = confirmBtn.onclick;
+        confirmBtn.addEventListener("click", () => {
+            if (selectedLocation) saveToStorage(selectedLocation);
+        });
+
+        // Also save whenever geocode completes
+        const _origReverseGeocode = window.reverseGeocode;
+
+        // ────────────────────────────────────────────────────────
+        // Init
+        // ────────────────────────────────────────────────────────
+        setLang(initLang);
+
+        if (initLat && initLng) {
+            // URL params take priority
+            placeMarker(initLat, initLng);
+            map.setView([initLat, initLng], 13);
+            showToast(i18n[initLang].drag_hint, 3000);
+        } else {
+            // Try saved location next
+            const saved = loadFromStorage();
+            if (saved && saved.lat && saved.lng) {
+                placeMarker(saved.lat, saved.lng);
+                map.setView([saved.lat, saved.lng], 13);
+                showToast(i18n[lang].drag_hint, 3000);
+            } else if (navigator.geolocation) {
+                // No URL params and no saved location — silently try device location
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const { latitude: lat, longitude: lng } = pos.coords;
+                        map.setView([lat, lng], 13, { animate: true });
+                        placeMarker(lat, lng);
+                    },
+                    () => {
+                        // Permission denied — stay on default center (Makkah), show hint
+                        locationText.textContent = i18n[lang].tap_hint;
+                        locationText.classList.add("placeholder");
+                    },
+                    { timeout: 5000, maximumAge: 60000 }
+                );
+            }
+        }
+    </script>
+</body>
+
+</html>
