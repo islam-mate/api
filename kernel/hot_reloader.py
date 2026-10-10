@@ -1,12 +1,11 @@
-import threading
+﻿import threading
 import time
 import os
 
 
 class HotReloader:
     def __init__(self):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.config_path = os.path.join(base_dir, "config", "config.yaml")
+        self.config_path = "config.yaml"
         self.last_modified = None
         self._thread = None
         self._running = False

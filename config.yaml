@@ -1,0 +1,51 @@
+﻿app:
+  name: Islam Mate API
+  version: 1.0.0
+  mode: development
+  debug: true
+
+server:
+  host: 0.0.0.0
+  port: 8000
+  reload: true
+
+modules:
+  prayer_times: true
+  qibla: true
+  ramadan: true
+  hijri: true
+  azkar: true
+  dua: true
+  allah_names: true
+  hadith: true
+  auth: true
+  quran: false
+
+security:
+  auth_enabled: false
+  rate_limiting: true
+  rate_limit_default: "60/minute"
+  rate_limit_strict: "30/minute"
+  rate_limit_heavy: "10/minute"
+  ip_whitelist: []
+
+cors:
+  allow_origins:
+    - "*"
+  allow_methods:
+    - "*"
+  allow_headers:
+    - "*"
+
+database:
+  pool_size: 10
+  max_overflow: 20
+
+cache:
+  ttl: 3600
+
+languages:
+  default: en
+  supported:
+    - en
+    - ar

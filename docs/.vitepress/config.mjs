@@ -40,6 +40,26 @@ export default defineConfig({
       dir: 'rtl',
       link: '/ar/',
       title: 'Islam Mate API',
+  ignoreDeadLinks: true,
+
+  sitemap: {
+    hostname: 'https://islam-mate-api.readthedocs.io'
+  },
+
+  head: [
+    ['meta', { name: 'keywords', content: 'islamic api, prayer times api, quran api, hadith api, azkar api, qibla api, hijri calendar api, fastapi, python, open source, muslim developer, arabic api' }],
+    ['meta', { name: 'author', content: 'Youssef Mekkkawy' }],
+    ['meta', { name: 'robots', content: 'index, follow' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'Islam Mate API' }],
+    ['meta', { property: 'og:title', content: 'Islam Mate API — Open-source Islamic REST API' }],
+    ['meta', { property: 'og:description', content: 'Open-source Islamic REST API for Muslim developers. Prayer times, Quran, Hadith, Azkar, Qibla, Hijri Calendar and more. Built with FastAPI + Python.' }],
+    ['meta', { property: 'og:url', content: 'https://islam-mate-api.readthedocs.io' }],
+    ['meta', { name: 'twitter:card', content: 'summary' }],
+    ['meta', { name: 'twitter:title', content: 'Islam Mate API — Open-source Islamic REST API' }],
+    ['meta', { name: 'twitter:description', content: 'Prayer times, Quran, Hadith, Azkar, Qibla and more. Free Islamic REST API built with FastAPI.' }],
+    ['link', { rel: 'canonical', href: 'https://islam-mate-api.readthedocs.io' }],
+  ],
       description: 'واجهة برمجية اسلامية مفتوحة المصدر',
       themeConfig: {
         nav: [

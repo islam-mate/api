@@ -1,24 +1,17 @@
+from kernel.services.database import DatabaseService
 from kernel.services.cache import CacheService
 from kernel.services.logger import LoggerService
 from kernel.services.config_reader import ConfigReader
 from kernel.services.translator import TranslatorService
-from kernel.database import DatabaseService  # ← only this, remove kernel.services.database
 
 
 class ServiceContainer:
     def __init__(self):
         self.config = ConfigReader()
         self.logger = LoggerService()
-        self.db = DatabaseService()        
+        self.db = DatabaseService()
         self.cache = CacheService()
         self.translator = TranslatorService()
-
-
-
-    def init_db(self, config: dict) -> None:
-        """Call after config is loaded."""
-        self.db.setup(config)
-
 
     async def init(self):
         self.config.load()

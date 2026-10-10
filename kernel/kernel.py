@@ -5,8 +5,6 @@ from kernel.router import Router
 from kernel.mode_manager import ModeManager
 from kernel.hot_reloader import HotReloader
 from kernel.dependency_checker import DependencyChecker
-from kernel.error_handler import register_error_handlers
-from kernel.database import Base
 
 
 class Kernel:
@@ -30,7 +28,7 @@ class Kernel:
         print(f"Modules loaded: {len(self.module_loader.modules)}")
 
     async def init_services(self):
-        await self.service_container.db.connect(self.service_container.config.config)
+        await self.service_container.db.connect()
         await self.service_container.cache.connect()
         self.service_container.logger.info("All services initialized")
         print("Islamic API is ready.")
@@ -41,5 +39,4 @@ class Kernel:
         print("Islamic API stopped.")
 
     def register_routes(self, app: FastAPI):
-        register_error_handlers(app)   
         self.router.register(app, self.module_loader.modules)
