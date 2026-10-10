@@ -47,18 +47,21 @@ class Module(BaseModule):
     # ── Formatter ─────────────────────────────────────────────────────────────
 
     def _format_lecture(self, lec: dict, lang: str) -> dict:
-        tr = lec.get("translations", {})
-        title = tr.get(lang, tr.get("en", {})).get("title", lec.get("title_clean", lec.get("title_raw", "")))
+        tr    = lec.get("translations", {})
+        title = tr.get(lang, tr.get("en", {})).get(
+            "title", lec.get("title_clean", lec.get("title_raw", ""))
+        )
         return {
-            "id"           : lec["id"],
-            "title"        : title,
-            "title_clean"  : lec.get("title_clean", ""),
-            "filename"     : lec.get("filename", ""),
-            "type"         : lec.get("type", "audio"),
-            "size_mb"      : lec.get("size_mb", 0),
-            "audio_url"    : lec.get("audio_url") or None,
-            "video_url"    : lec.get("video_url") or None,
-            "thumbnail_url": lec.get("thumbnail_url") or None,
+            "id"            : lec["id"],
+            "title"         : title,
+            "title_clean"   : lec.get("title_clean", ""),
+            "filename"      : lec.get("filename", ""),
+            "type"          : lec.get("type", "audio"),
+            "size_mb"       : lec.get("size_mb", 0),
+            "audio_url"     : lec.get("audio_url") or None,
+            "video_url_mp4" : lec.get("video_url_mp4") or None,
+            "video_url_mkv" : lec.get("video_url_mkv") or None,
+            "thumbnail_url" : lec.get("thumbnail_url") or None,
         }
 
     # ── Endpoints ─────────────────────────────────────────────────────────────
@@ -66,17 +69,16 @@ class Module(BaseModule):
     async def get_all(
         self,
         request: Request,
-        lang   : str          = Query("en",  description="Language: en or ar"),
-        type   : Optional[str]= Query(None,  description="Filter: audio | audio_video | all"),
-        page   : int          = Query(1,     ge=1, description="Page number"),
-        limit  : int          = Query(20,    ge=1, le=100, description="Items per page"),
+        lang   : str           = Query("en",  description="Language: en or ar"),
+        type   : Optional[str] = Query(None,  description="Filter: audio | audio_video | all"),
+        page   : int           = Query(1,     ge=1,  description="Page number"),
+        limit  : int           = Query(20,    ge=1,  le=100, description="Items per page"),
     ):
         """List all Al-Sharaawi lectures (paginated, filterable by type)."""
         lang = self.get_lang(request, lang)
         data = self._load()
 
         lectures = data["lectures"]
-
         if type and type != "all":
             lectures = [l for l in lectures if l.get("type") == type]
 
@@ -116,19 +118,19 @@ class Module(BaseModule):
         request: Request,
         q      : str = Query(..., min_length=1, description="Search by title or surah name"),
         lang   : str = Query("en", description="Language: en or ar"),
-        page   : int = Query(1, ge=1),
+        page   : int = Query(1,  ge=1),
         limit  : int = Query(20, ge=1, le=100),
     ):
         """Search lectures by title."""
-        lang = self.get_lang(request, lang)
-        data = self._load()
-
+        lang  = self.get_lang(request, lang)
+        data  = self._load()
         q_low = q.lower()
+
         matches = [
             l for l in data["lectures"]
             if q_low in l.get("title_clean", "").lower()
-            or q_low in l.get("title_raw", "").lower()
-            or q_low in l.get("filename", "").lower()
+            or q_low in l.get("title_raw",   "").lower()
+            or q_low in l.get("filename",    "").lower()
         ]
 
         total = len(matches)
@@ -147,8 +149,8 @@ class Module(BaseModule):
     async def get_random(
         self,
         request: Request,
-        lang   : str          = Query("en", description="Language: en or ar"),
-        type   : Optional[str]= Query(None, description="Filter: audio | audio_video"),
+        lang   : str           = Query("en",  description="Language: en or ar"),
+        type   : Optional[str] = Query(None,  description="Filter: audio | audio_video"),
     ):
         """Return a random lecture."""
         lang = self.get_lang(request, lang)
