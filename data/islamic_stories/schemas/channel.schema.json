@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "islamic_stories/channel",
+  "title": "Islamic Stories Channel",
+  "description": "A YouTube channel that provides Islamic story content",
+  "type": "object",
+  "required": ["id", "name", "url", "language"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique slug identifier for the channel",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "examples": ["yousef_elkott"]
+    },
+    "name": {
+      "type": "object",
+      "description": "Bilingual channel name",
+      "required": ["ar", "en"],
+      "additionalProperties": false,
+      "properties": {
+        "ar": { "type": "string", "minLength": 1 },
+        "en": { "type": "string", "minLength": 1 }
+      }
+    },
+    "url": {
+      "type": "string",
+      "description": "YouTube channel URL",
+      "format": "uri",
+      "pattern": "^https://www\\.youtube\\.com/@"
+    },
+    "language": {
+      "type": "string",
+      "description": "Primary language of the channel",
+      "enum": ["ar", "en"]
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional curation note (e.g. mixed content warning)"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "islamic_stories/video",
+  "title": "Islamic Stories Video",
+  "description": "A single Islamic video entry. URLs are derived at read time — never stored.",
+  "type": "object",
+  "required": [
+    "id",
+    "provider",
+    "video_id",
+    "channel_id",
+    "category_id",
+    "title",
+    "language",
+    "depth",
+    "duration_seconds",
+    "sort_order"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Compound unique key: '{provider}:{video_id}'",
+      "pattern": "^youtube:[A-Za-z0-9_-]{11}$",
+      "examples": ["youtube:dQw4w9WgXcQ"]
+    },
+    "provider": {
+      "type": "string",
+      "description": "Video platform. Only 'youtube' for now.",
+      "enum": ["youtube"]
+    },
+    "video_id": {
+      "type": "string",
+      "description": "Platform-native video ID. For YouTube: 11-character ID.",
+      "pattern": "^[A-Za-z0-9_-]{11}$",
+      "examples": ["dQw4w9WgXcQ"]
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "References channels[] entry in index.json",
+      "enum": ["yousef_elkott", "abdulrahman_babgi", "omar_abdulrahman"]
+    },
+    "category_id": {
+      "type": "string",
+      "description": "References categories[] entry in index.json",
+      "enum": [
+        "prophet_stories",
+        "seerah",
+        "companions",
+        "miracles",
+        "quran_creatures",
+        "islamic_history"
+      ]
+    },
+    "title": {
+      "type": "object",
+      "description": "Bilingual title. 'ar' is required (scraped). 'en' is optional (manual).",
+      "required": ["ar"],
+      "additionalProperties": false,
+      "properties": {
+        "ar": {
+          "type": "string",
+          "minLength": 1
+        },
+        "en": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "language": {
+      "type": "string",
+      "description": "Primary spoken language of the video",
+      "enum": ["ar", "en"]
+    },
+    "depth": {
+      "type": "string",
+      "description": "Depth of Islamic content coverage",
+      "enum": ["summary", "detailed", "series"]
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "description": "Video duration in seconds. 0 if unknown.",
+      "minimum": 0
+    },
+    "sort_order": {
+      "type": "integer",
+      "description": "Position in playlist. Used by app to build autoplay queue.",
+      "minimum": 1
+    },
+    "prophet_id": {
+      "type": "string",
+      "description": "Optional. Slug of the prophet featured. Enables cross-category filtering.",
+      "examples": ["ibrahim", "musa", "isa", "nuh", "yusuf", "muhammad"]
+    }
+  }
+}

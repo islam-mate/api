@@ -1,0 +1,394 @@
+[
+  {
+    "id": "seerah:youtube:aLVD1uvQIVs",
+    "provider": "youtube",
+    "video_id": "aLVD1uvQIVs",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "قصة الرجل الذي حاول تدمير الكعبة.. من هو أبرهة ولماذا فعلها؟ | ج 1"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 901,
+    "sort_order": 1
+  },
+  {
+    "id": "seerah:youtube:DuSVU6tfPGY",
+    "provider": "youtube",
+    "video_id": "DuSVU6tfPGY",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "لحظة مؤثرة.. كيف خطب النبي خديجة؟ وماذا حدث بعد نزول الوحي؟ | ج 2"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 772,
+    "sort_order": 2
+  },
+  {
+    "id": "seerah:youtube:MOeZ-VehEt8",
+    "provider": "youtube",
+    "video_id": "MOeZ-VehEt8",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "الرجل الذي تحدى النبي في أول الدعوة.. من هو؟! | ج 3"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 672,
+    "sort_order": 3
+  },
+  {
+    "id": "seerah:youtube:MVHkNBjIxdg",
+    "provider": "youtube",
+    "video_id": "MVHkNBjIxdg",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "بعد وفاة ابن النبي.. رجل يشمت فيه، فتنزل آية تهز مكة! |ج 4"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 731,
+    "sort_order": 4
+  },
+  {
+    "id": "seerah:youtube:PFnhwzbviPs",
+    "provider": "youtube",
+    "video_id": "PFnhwzbviPs",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "مشهد مرعب عند الكعبة.. كاد النبي أن يموت مخنوقاً! | ج 5"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 658,
+    "sort_order": 5
+  },
+  {
+    "id": "seerah:youtube:KXjyc-RjUI0",
+    "provider": "youtube",
+    "video_id": "KXjyc-RjUI0",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "كيف تحول عمر من أشد أعداء الإسلام.. إلى أعظم أنصاره؟! |ج 6"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 952,
+    "sort_order": 6
+  },
+  {
+    "id": "seerah:youtube:sro2ECBKKRk",
+    "provider": "youtube",
+    "video_id": "sro2ECBKKRk",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "لماذا اعترفت قريش بالهزيمة ؟! | السيرة النبوية ج 7"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 608,
+    "sort_order": 7
+  },
+  {
+    "id": "seerah:youtube:rK6lvVhqABU",
+    "provider": "youtube",
+    "video_id": "rK6lvVhqABU",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "ليه بدأ تعذيب الصحابة بعد فشل مفاوضات قريش ؟! | ج 8"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 963,
+    "sort_order": 8
+  },
+  {
+    "id": "seerah:youtube:_7JYecfz5Pk",
+    "provider": "youtube",
+    "video_id": "_7JYecfz5Pk",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "9 محاولات لقتل النبي ﷺ وهذه كانت الأخطر! | ج 9"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1111,
+    "sort_order": 9
+  },
+  {
+    "id": "seerah:youtube:VIGCB_Fv3bo",
+    "provider": "youtube",
+    "video_id": "VIGCB_Fv3bo",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "عام الحزن.. أصعب أيام النبي ﷺ | ج 10"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 923,
+    "sort_order": 10
+  },
+  {
+    "id": "seerah:youtube:8r62KHENhtA",
+    "provider": "youtube",
+    "video_id": "8r62KHENhtA",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "من جراح الطائف إلى عروج السماء .. رحلة الإسراء والمعراج كاملة | ج ١١"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1228,
+    "sort_order": 11
+  },
+  {
+    "id": "seerah:youtube:jpHi8sIXuS0",
+    "provider": "youtube",
+    "video_id": "jpHi8sIXuS0",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "لماذا سُمي ابو بكر بهذا الاسم ؟ | ج 12"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 747,
+    "sort_order": 12
+  },
+  {
+    "id": "seerah:youtube:CwY6hkYaKMU",
+    "provider": "youtube",
+    "video_id": "CwY6hkYaKMU",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "بداية طريق المدينة و من هم ال 6 شباب ؟ | ج 13"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 617,
+    "sort_order": 13
+  },
+  {
+    "id": "seerah:youtube:-ucMDCs8XGs",
+    "provider": "youtube",
+    "video_id": "-ucMDCs8XGs",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "الاجتماع السري تحت عيون قريش في الظلام | ج 14"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 640,
+    "sort_order": 14
+  },
+  {
+    "id": "seerah:youtube:zHuM6BIA51A",
+    "provider": "youtube",
+    "video_id": "zHuM6BIA51A",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "من هي أم سلمة ؟ | ج 15"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 650,
+    "sort_order": 15
+  },
+  {
+    "id": "seerah:youtube:OrUellT-SeI",
+    "provider": "youtube",
+    "video_id": "OrUellT-SeI",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "أخطر ليلة في التاريخ | ج 16"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 617,
+    "sort_order": 16
+  },
+  {
+    "id": "seerah:youtube:6BHHkp-jRns",
+    "provider": "youtube",
+    "video_id": "6BHHkp-jRns",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "ماذا حدث داخل الغار و كيف لم يجدوا الرسول ؟! | ج 17"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 711,
+    "sort_order": 17
+  },
+  {
+    "id": "seerah:youtube:nOu810zGNK4",
+    "provider": "youtube",
+    "video_id": "nOu810zGNK4",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "لحظة هجرة النبي مع ابا بكر و اكتشاف أمرهم !! | ج 18"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 580,
+    "sort_order": 18
+  },
+  {
+    "id": "seerah:youtube:3WUxVcBlFEk",
+    "provider": "youtube",
+    "video_id": "3WUxVcBlFEk",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "استقبال أهل المدينة للرسول | ج 19"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 569,
+    "sort_order": 19
+  },
+  {
+    "id": "seerah:youtube:1Zp8G-nxoUg",
+    "provider": "youtube",
+    "video_id": "1Zp8G-nxoUg",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "المدينة قبل الإسلام | ج 20"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 863,
+    "sort_order": 20
+  },
+  {
+    "id": "seerah:youtube:qc9NHcL7YG0",
+    "provider": "youtube",
+    "video_id": "qc9NHcL7YG0",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "نهاية أبو لهب علي يد أمراة | ج 21"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 989,
+    "sort_order": 21
+  },
+  {
+    "id": "seerah:youtube:-WxrWXoxNUg",
+    "provider": "youtube",
+    "video_id": "-WxrWXoxNUg",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "كيف مات أبو جهل ؟ | ج 22"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1313,
+    "sort_order": 22
+  },
+  {
+    "id": "seerah:youtube:g_hhgh0Erd0",
+    "provider": "youtube",
+    "video_id": "g_hhgh0Erd0",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "كيف مات حمزة ابن عبد المطلب بالتفصيل ؟ | ج 23"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1542,
+    "sort_order": 23
+  },
+  {
+    "id": "seerah:youtube:z60sPkuFzSk",
+    "provider": "youtube",
+    "video_id": "z60sPkuFzSk",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "الغدر الآكبر الذي تعرض له المسلمين | ج 24"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1402,
+    "sort_order": 24
+  },
+  {
+    "id": "seerah:youtube:MJew12Jeuec",
+    "provider": "youtube",
+    "video_id": "MJew12Jeuec",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "إتهموا زوجة الرسول إتهام شديد جداً | ج 25"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1400,
+    "sort_order": 25
+  },
+  {
+    "id": "seerah:youtube:-Jjy9WNvk4I",
+    "provider": "youtube",
+    "video_id": "-Jjy9WNvk4I",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "الليلة التي اتخرق فيها العهد و الدم اتسفك جوه الحرم | ج 26"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 857,
+    "sort_order": 26
+  },
+  {
+    "id": "seerah:youtube:5ryMz1imPXU",
+    "provider": "youtube",
+    "video_id": "5ryMz1imPXU",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "نهاية كبار قريش و تفاصيل فتح مكة | ج 27"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1041,
+    "sort_order": 27
+  },
+  {
+    "id": "seerah:youtube:0gNbbcota-4",
+    "provider": "youtube",
+    "video_id": "0gNbbcota-4",
+    "channel_id": "yousef_elkott",
+    "category_id": "seerah",
+    "title": {
+      "ar": "آخر لحظات في حياة الرسول ﷺ"
+    },
+    "language": "ar",
+    "depth": "detailed",
+    "duration_seconds": 1623,
+    "sort_order": 28
+  }
+]

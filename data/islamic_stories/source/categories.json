@@ -1,0 +1,51 @@
+[
+  {
+    "id": "prophet_stories",
+    "name": {
+      "ar": "قصص الأنبياء",
+      "en": "Prophet Stories"
+    }
+  },
+  {
+    "id": "seerah",
+    "name": {
+      "ar": "السيرة النبوية",
+      "en": "Prophetic Seerah"
+    }
+  },
+  {
+    "id": "companions",
+    "name": {
+      "ar": "قصص الصحابة",
+      "en": "Companions Stories"
+    }
+  },
+  {
+    "id": "miracles",
+    "name": {
+      "ar": "معجزات الأنبياء",
+      "en": "Prophets' Miracles"
+    }
+  },
+  {
+    "id": "quran_creatures",
+    "name": {
+      "ar": "مخلوقات القرآن",
+      "en": "Quran Creatures"
+    }
+  },
+  {
+    "id": "islamic_history",
+    "name": {
+      "ar": "التاريخ الإسلامي",
+      "en": "Islamic History"
+    }
+  },
+  {
+    "id": "afterlife",
+    "name": {
+      "ar": "الآخرة",
+      "en": "Afterlife"
+    }
+  }
+]

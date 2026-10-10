@@ -1,0 +1,30 @@
+[
+  {
+    "id": "yousef_elkott",
+    "name": {
+      "ar": "يوسف القط",
+      "en": "Yousef Elkott"
+    },
+    "url": "https://www.youtube.com/@yousefElkott",
+    "language": "ar"
+  },
+  {
+    "id": "abdulrahman_babgi",
+    "name": {
+      "ar": "عبدالرحمن بابجي",
+      "en": "Abdulrahman Babgi"
+    },
+    "url": "https://www.youtube.com/@abdulrahmanbabgi",
+    "language": "ar"
+  },
+  {
+    "id": "omar_abdulrahman",
+    "name": {
+      "ar": "عمر عبدالرحمن",
+      "en": "Omar Abdulrahman"
+    },
+    "url": "https://www.youtube.com/@OmarAbdulrahman",
+    "language": "ar",
+    "note": "Curated manually — channel has mixed (non-Islamic) content. Only approved playlists included."
+  }
+]
