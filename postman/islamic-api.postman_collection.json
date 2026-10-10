@@ -6,9 +6,10 @@
   },
   "variable": [
     {"key": "base_url", "value": "http://localhost:8000", "type": "string"},
-    {"key": "api_key", "value": "", "type": "string"},
+    {"key": "lang", "value": "en", "type": "string"},
     {"key": "lat", "value": "30.0444", "type": "string"},
-    {"key": "lng", "value": "31.2357", "type": "string"}
+    {"key": "lng", "value": "31.2357", "type": "string"},
+    {"key": "timezone", "value": "Africa/Cairo", "type": "string"}
   ],
   "item": [
     {
@@ -19,7 +20,14 @@
           "request": {
             "method": "GET",
             "url": "{{base_url}}/",
-            "description": "Check API is running"
+            "description": "Check API is running and list loaded modules"
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
           }
         }
       ]
@@ -32,29 +40,12 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/prayer-times?latitude={{lat}}&longitude={{lng}}&timezone=Africa/Cairo&method=EGYPT&lang=en",
+              "raw": "{{base_url}}/api/v1/{{lang}}/prayer-times?latitude={{lat}}&longitude={{lng}}&timezone={{timezone}}&method=EGYPT",
               "query": [
                 {"key": "latitude", "value": "{{lat}}"},
                 {"key": "longitude", "value": "{{lng}}"},
-                {"key": "timezone", "value": "Africa/Cairo"},
-                {"key": "method", "value": "EGYPT"},
-                {"key": "lang", "value": "en"}
-              ]
-            }
-          }
-        },
-        {
-          "name": "Get Prayer Times (Arabic)",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/v1/prayer-times?latitude={{lat}}&longitude={{lng}}&timezone=Africa/Cairo&method=EGYPT&lang=ar",
-              "query": [
-                {"key": "latitude", "value": "{{lat}}"},
-                {"key": "longitude", "value": "{{lng}}"},
-                {"key": "timezone", "value": "Africa/Cairo"},
-                {"key": "method", "value": "EGYPT"},
-                {"key": "lang", "value": "ar"}
+                {"key": "timezone", "value": "{{timezone}}"},
+                {"key": "method", "value": "EGYPT"}
               ]
             }
           }
@@ -64,11 +55,11 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/prayer/next?latitude={{lat}}&longitude={{lng}}&timezone=Africa/Cairo&method=EGYPT",
+              "raw": "{{base_url}}/api/v1/{{lang}}/prayer/next?latitude={{lat}}&longitude={{lng}}&timezone={{timezone}}&method=EGYPT",
               "query": [
                 {"key": "latitude", "value": "{{lat}}"},
                 {"key": "longitude", "value": "{{lng}}"},
-                {"key": "timezone", "value": "Africa/Cairo"},
+                {"key": "timezone", "value": "{{timezone}}"},
                 {"key": "method", "value": "EGYPT"}
               ]
             }
@@ -79,13 +70,13 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/prayer/month?latitude={{lat}}&longitude={{lng}}&month=10&year=2026&timezone=Africa/Cairo&method=EGYPT",
+              "raw": "{{base_url}}/api/v1/{{lang}}/prayer/month?latitude={{lat}}&longitude={{lng}}&month=10&year=2026&timezone={{timezone}}&method=EGYPT",
               "query": [
                 {"key": "latitude", "value": "{{lat}}"},
                 {"key": "longitude", "value": "{{lng}}"},
                 {"key": "month", "value": "10"},
                 {"key": "year", "value": "2026"},
-                {"key": "timezone", "value": "Africa/Cairo"},
+                {"key": "timezone", "value": "{{timezone}}"},
                 {"key": "method", "value": "EGYPT"}
               ]
             }
@@ -95,7 +86,14 @@
           "name": "Get Prayer Methods",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/api/v1/prayer/methods"
+            "url": "{{base_url}}/api/v1/{{lang}}/prayer/methods"
+          }
+        },
+        {
+          "name": "Auto Prayer Times (from IP)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/prayer-times/auto"
           }
         }
       ]
@@ -108,27 +106,394 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/qibla?latitude={{lat}}&longitude={{lng}}&lang=en",
+              "raw": "{{base_url}}/api/v1/{{lang}}/qibla?latitude={{lat}}&longitude={{lng}}",
+              "query": [
+                {"key": "latitude", "value": "{{lat}}"},
+                {"key": "longitude", "value": "{{lng}}"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ramadan",
+      "item": [
+        {
+          "name": "Ramadan Info",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/ramadan"
+          }
+        },
+        {
+          "name": "Ramadan Calendar",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/{{lang}}/ramadan/calendar?latitude={{lat}}&longitude={{lng}}&timezone={{timezone}}",
               "query": [
                 {"key": "latitude", "value": "{{lat}}"},
                 {"key": "longitude", "value": "{{lng}}"},
-                {"key": "lang", "value": "en"}
+                {"key": "timezone", "value": "{{timezone}}"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hijri Calendar",
+      "item": [
+        {
+          "name": "Hijri Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hijri"
+          }
+        },
+        {
+          "name": "Hijri Today",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hijri/today"
+          }
+        },
+        {
+          "name": "Convert Date",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/{{lang}}/hijri/convert?date=2026-10-10&direction=to_hijri",
+              "query": [
+                {"key": "date", "value": "2026-10-10"},
+                {"key": "direction", "value": "to_hijri"}
               ]
             }
           }
         },
         {
-          "name": "Get Qibla Direction (Arabic)",
+          "name": "Hijri Months",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hijri/months"
+          }
+        },
+        {
+          "name": "Islamic Events",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/qibla?latitude={{lat}}&longitude={{lng}}&lang=ar",
+              "raw": "{{base_url}}/api/v1/{{lang}}/hijri/events?year=1446",
               "query": [
-                {"key": "latitude", "value": "{{lat}}"},
-                {"key": "longitude", "value": "{{lng}}"},
-                {"key": "lang", "value": "ar"}
+                {"key": "year", "value": "1446"}
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Azkar",
+      "item": [
+        {
+          "name": "All Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/azkar"
+          }
+        },
+        {
+          "name": "Azkar by Category ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/azkar/1"
+          }
+        },
+        {
+          "name": "Azkar by Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/azkar/slug/morning"
+          }
+        },
+        {
+          "name": "Random Zikr",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/azkar/random/item"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dua",
+      "item": [
+        {
+          "name": "All Duas",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/dua"
+          }
+        },
+        {
+          "name": "Random Dua",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/dua/random"
+          }
+        },
+        {
+          "name": "Dua by Category",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/dua/travel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 Names of Allah",
+      "item": [
+        {
+          "name": "All Names",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/allah-names"
+          }
+        },
+        {
+          "name": "Random Name",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/allah-names/random"
+          }
+        },
+        {
+          "name": "Name by Number",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/allah-names/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hadith",
+      "item": [
+        {
+          "name": "All Collections",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hadith"
+          }
+        },
+        {
+          "name": "Random Hadith",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hadith/random"
+          }
+        },
+        {
+          "name": "Hadiths by Collection",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hadith/bukhari"
+          }
+        },
+        {
+          "name": "Hadith by Number",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/hadith/bukhari/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "item": [
+        {
+          "name": "Detect from IP",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/location/detect"
+          }
+        },
+        {
+          "name": "Search City",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/{{lang}}/location/search?q=Cairo",
+              "query": [
+                {"key": "q", "value": "Cairo"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Auto Location",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/{{lang}}/location/auto?latitude={{lat}}&longitude={{lng}}",
+              "query": [
+                {"key": "latitude", "value": "{{lat}}"},
+                {"key": "longitude", "value": "{{lng}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Location Config",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/location/config"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zakat",
+      "item": [
+        {
+          "name": "Zakat Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/zakat"
+          }
+        },
+        {
+          "name": "Calculate Zakat",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/{{lang}}/zakat/calculate?gold_grams=100&silver_grams=0&cash=5000&trade_goods=0",
+              "query": [
+                {"key": "gold_grams", "value": "100"},
+                {"key": "silver_grams", "value": "0"},
+                {"key": "cash", "value": "5000"},
+                {"key": "trade_goods", "value": "0"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Nisab Thresholds",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/zakat/nisab"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Al-Sharaawi",
+      "item": [
+        {
+          "name": "All Lectures",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/alsharaawi"
+          }
+        },
+        {
+          "name": "Search Lectures",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/{{lang}}/alsharaawi/search?q=الصلاة",
+              "query": [
+                {"key": "q", "value": "الصلاة"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Random Lecture",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/alsharaawi/random"
+          }
+        },
+        {
+          "name": "Lecture by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/alsharaawi/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adhan",
+      "item": [
+        {
+          "name": "All Recordings",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/adhan"
+          }
+        },
+        {
+          "name": "All Muezzins",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/adhan/muezzins"
+          }
+        },
+        {
+          "name": "Muezzin by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/adhan/muezzins/1"
+          }
+        },
+        {
+          "name": "Random Adhan",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/adhan/random"
+          }
+        },
+        {
+          "name": "Adhan by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/adhan/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register API Key",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{base_url}}/api/v1/{{lang}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"app_name\": \"my-app\", \"email\": \"user@example.com\"}"
+            }
+          }
+        },
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/{{lang}}/auth/keys"
+          }
+        },
+        {
+          "name": "Revoke API Key",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/v1/{{lang}}/auth/keys/1/revoke"
           }
         }
       ]

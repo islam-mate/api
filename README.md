@@ -7,10 +7,9 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?style=flat-square)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-latest-teal.svg?style=flat-square)](https://fastapi.tiangolo.com)
-[![Tests](https://img.shields.io/badge/Tests-98%20passing-brightgreen.svg?style=flat-square)](#)
 [![Docs](https://img.shields.io/badge/Docs-readthedocs-blue.svg?style=flat-square)](https://islam-mate-api.readthedocs.io)
 
-[Documentation](https://islam-mate-api.readthedocs.io) · [Report Bug](https://github.com/Youssef-Mekkkawy/islam-mate-api/issues) · [Request Feature](https://github.com/Youssef-Mekkkawy/islam-mate-api/issues)
+[Documentation](https://islam-mate-api.readthedocs.io) · [Report Bug](https://github.com/islam-mate/api/issues) · [Request Feature](https://github.com/islam-mate/api/issues)
 
 ---
 
@@ -26,33 +25,37 @@
 
 A single unified REST API that gives Muslim developers access to all essential Islamic data in one place.
 
-No more juggling 5 different APIs. One key, everything Islamic.
+No more juggling multiple APIs. One codebase, everything Islamic.
 
 ---
 
 ## Features
 
-| Module | Endpoints | Description |
-|---|---|---|
-| 🕐 Prayer Times | 4 | Daily times, next prayer, monthly calendar, 7 calculation methods |
-| 🧭 Qibla | 1 | Direction and distance to Mecca for any location |
-| 🌙 Ramadan | 2 | Suhoor/Iftar times and full calendar |
-| 📅 Hijri Calendar | 4 | Conversion, months, Islamic events |
-| 📿 Azkar | 4 | 130+ categories from Hisnul Muslim with audio |
-| 🤲 Dua | 3 | Duas by category with transliteration |
-| ✨ 99 Names of Allah | 3 | Names with meanings in Arabic and English |
-| 📖 Hadith | 4 | 8 collections, 36,000+ hadiths |
+| Module | Description |
+|---|---|
+| 🕐 **Prayer Times** | Daily prayer times for any location, next prayer countdown, monthly calendar, 7 calculation methods (MWL, ISNA, Egypt, Makkah, Karachi, Tehran, Jafari) |
+| 🧭 **Qibla** | Qibla direction and distance to Mecca for any coordinates |
+| 🌙 **Ramadan** | Suhoor/Iftar times and full Ramadan calendar |
+| 📅 **Hijri Calendar** | Hijri ↔ Gregorian conversion, Islamic months, upcoming events |
+| 📿 **Azkar** | 130+ categories from Hisnul Muslim — morning, evening, prayer, sleep, and more |
+| 🤲 **Dua** | Duas by category with Arabic text and transliteration |
+| ✨ **99 Names of Allah** | All 99 names with meanings in Arabic and English |
+| 📖 **Hadith** | 8 major collections, 36,000+ hadiths — search, random, by collection |
+| 📍 **Location** | City and country lookup with coordinates, timezone, and region data |
+| 🗓️ **Islamic Events** | Full Islamic calendar events with Hijri and Gregorian dates |
+| 💰 **Zakat** | Zakat calculator for gold, silver, cash, and trade goods — with nisab thresholds |
+| 🎙️ **Al-Sharaawi** | Catalog of Sheikh Muhammad Metwally Al-Sharaawi lectures |
+| 🔊 **Adhan** | Adhan audio catalog by muezzin and style |
+| 📚 **Islamic Stories** | 184 curated Islamic videos across 6 categories — Prophet Stories, Seerah, Companions, Miracles, Quran Creatures, Afterlife |
 
 ---
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/Youssef-Mekkkawy/islam-mate-api
-cd islam-mate-api
+git clone https://github.com/islam-mate/api
+cd api
 pip install -r requirements.txt
-python scripts/fetch_azkar.py
-python scripts/fetch_hadith.py
 uvicorn main:app --reload
 ```
 
@@ -71,6 +74,8 @@ docker compose up
 ## API Usage
 
 ### Language Support
+
+All endpoints support Arabic and English via the URL prefix:
 
 ```bash
 # English
@@ -92,8 +97,16 @@ curl "http://localhost:8000/api/v1/en/hadith/random"
 # Qibla direction
 curl "http://localhost:8000/api/v1/en/qibla?latitude=30.04&longitude=31.23"
 
-# 99 Names of Allah
+# 99 Names of Allah (random)
 curl "http://localhost:8000/api/v1/en/allah-names/random"
+
+# Zakat calculator
+curl -X POST "http://localhost:8000/api/v1/en/zakat/calculate" \
+  -H "Content-Type: application/json" \
+  -d '{"gold_grams": 100, "silver_grams": 0, "cash": 5000}'
+
+# Islamic Stories by category
+curl "http://localhost:8000/api/v1/en/islamic-stories?category=prophet_stories"
 ```
 
 ---
@@ -102,12 +115,13 @@ curl "http://localhost:8000/api/v1/en/allah-names/random"
 
 | Tool | Purpose |
 |---|---|
-| Python + FastAPI | REST API |
-| SQLite | API key storage |
+| Python + FastAPI | REST API framework |
+| SQLite / PostgreSQL | Storage (SQLite default, PostgreSQL for production) |
 | SlowAPI | Rate limiting (60 req/min) |
-| Loguru | Logging |
-| HuggingFace | Audio and data hosting |
+| Loguru | Structured logging |
+| HuggingFace | Audio and dataset hosting |
 | Docker | Containerization |
+| yt-dlp | Islamic video catalog pipeline |
 
 ---
 
@@ -119,6 +133,7 @@ curl "http://localhost:8000/api/v1/en/allah-names/random"
 | Hadith | [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) | Unlicense (Public Domain) |
 | Quran Metadata | [QUL by Tarteel](https://qul.tarteel.ai) | MIT |
 | Al-Sharaawi Lectures | [HuggingFace](https://huggingface.co/datasets/elprofessorai/islam-mate-data) | — |
+| Islamic Stories | YouTube (curated channels) | — |
 
 ---
 
@@ -129,9 +144,9 @@ Full documentation at **[islam-mate-api.readthedocs.io](https://islam-mate-api.r
 - Getting Started
 - Authentication
 - Rate Limiting
-- All Endpoints
-- How to Use (cURL, Python, JS, PHP, Flutter, Android)
-- Prayer Time Math
+- All Endpoints Reference
+- Code Examples (cURL, Python, JavaScript, PHP, Flutter, Android)
+- Prayer Time Calculation Methods
 
 ---
 
@@ -155,33 +170,37 @@ MIT License — free to use, modify, and distribute.
 
 واجهة برمجية REST موحدة تمنح المطورين المسلمين الوصول إلى جميع البيانات الإسلامية الأساسية في مكان واحد.
 
-لا مزيد من استخدام 5 واجهات برمجية مختلفة. مفتاح واحد، كل شيء إسلامي.
+لا مزيد من استخدام واجهات برمجية متعددة. قاعدة كود واحدة، كل شيء إسلامي.
 
 ---
 
 ## المميزات
 
-| الوحدة | نقاط النهاية | الوصف |
-|---|---|---|
-| 🕐 اوقات الصلاة | 4 | الاوقات اليومية، الصلاة القادمة، التقويم الشهري، 7 طرق حساب |
-| 🧭 القبلة | 1 | الاتجاه والمسافة الى مكة المكرمة لاي موقع |
-| 🌙 رمضان | 2 | اوقات السحور والافطار والتقويم الكامل |
-| 📅 التقويم الهجري | 4 | التحويل، الاشهر، المناسبات الاسلامية |
-| 📿 الاذكار | 4 | اكثر من 130 فئة من حصن المسلم مع الصوت |
-| 🤲 الادعية | 3 | ادعية مصنفة مع النص العربي |
-| ✨ اسماء الله الحسنى | 3 | الاسماء مع معانيها بالعربية والانجليزية |
-| 📖 الحديث | 4 | 8 مجموعات، اكثر من 36,000 حديث |
+| الوحدة | الوصف |
+|---|---|
+| 🕐 **أوقات الصلاة** | أوقات الصلاة اليومية لأي موقع، العد التنازلي للصلاة القادمة، التقويم الشهري، 7 طرق حساب |
+| 🧭 **القبلة** | اتجاه القبلة والمسافة إلى مكة المكرمة لأي إحداثيات |
+| 🌙 **رمضان** | أوقات السحور والإفطار والتقويم الكامل لشهر رمضان |
+| 📅 **التقويم الهجري** | تحويل التاريخ هجري ↔ ميلادي، الأشهر الإسلامية، المناسبات القادمة |
+| 📿 **الأذكار** | أكثر من 130 فئة من حصن المسلم — أذكار الصباح والمساء والصلاة والنوم وغيرها |
+| 🤲 **الأدعية** | أدعية مصنفة مع النص العربي والنطق |
+| ✨ **أسماء الله الحسنى** | جميع الأسماء الـ 99 مع معانيها بالعربية والإنجليزية |
+| 📖 **الحديث** | 8 مجموعات كبرى، أكثر من 36,000 حديث — بحث، عشوائي، حسب المجموعة |
+| 📍 **الموقع** | البحث عن المدن والدول مع الإحداثيات والمنطقة الزمنية |
+| 🗓️ **المناسبات الإسلامية** | تقويم المناسبات الإسلامية بالتاريخين الهجري والميلادي |
+| 💰 **الزكاة** | حاسبة زكاة الذهب والفضة والنقود وعروض التجارة مع نصاب محدّث |
+| 🎙️ **الشعراوي** | فهرس محاضرات الشيخ محمد متولي الشعراوي |
+| 🔊 **الأذان** | فهرس تسجيلات الأذان بأصوات وأساليب مختلفة |
+| 📚 **القصص الإسلامية** | 184 فيديو إسلامي منتقى في 6 تصنيفات — قصص الأنبياء، السيرة، الصحابة، المعجزات، مخلوقات القرآن، الآخرة |
 
 ---
 
 ## البداية السريعة
 
 ```bash
-git clone https://github.com/Youssef-Mekkkawy/islam-mate-api
-cd islam-mate-api
+git clone https://github.com/islam-mate/api
+cd api
 pip install -r requirements.txt
-python scripts/fetch_azkar.py
-python scripts/fetch_hadith.py
 uvicorn main:app --reload
 ```
 
@@ -189,18 +208,10 @@ uvicorn main:app --reload
 
 ---
 
-## Docker
+## أمثلة سريعة
 
 ```bash
-docker compose up
-```
-
----
-
-## امثلة سريعة
-
-```bash
-# اوقات الصلاة للقاهرة
+# أوقات الصلاة للقاهرة
 curl "http://localhost:8000/api/v1/ar/prayer-times?latitude=30.04&longitude=31.23&timezone=Africa/Cairo"
 
 # حديث عشوائي
@@ -208,6 +219,11 @@ curl "http://localhost:8000/api/v1/ar/hadith/random"
 
 # اتجاه القبلة
 curl "http://localhost:8000/api/v1/ar/qibla?latitude=30.04&longitude=31.23"
+
+# حاسبة الزكاة
+curl -X POST "http://localhost:8000/api/v1/ar/zakat/calculate" \
+  -H "Content-Type: application/json" \
+  -d '{"gold_grams": 100, "silver_grams": 0, "cash": 5000}'
 ```
 
 ---
