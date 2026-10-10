@@ -1,88 +1,68 @@
 app:
+  debug: true
+  mode: development
   name: Islam Mate API
   version: 1.0.0
-  mode: development
-  debug: true
-
+cache:
+  ttl: 3600
+cors:
+  allowed_headers:
+  - '*'
+  allowed_methods:
+  - GET
+  - POST
+  - OPTIONS
+  allowed_origins:
+  - '*'
+  enabled: true
+database:
+  path: data/islammate.db
+  type: sqlite
+debug: false
+host: 127.0.0.1
+ip_whitelist:
+  allowed_ips:
+  - 127.0.0.1
+  - ::1
+  block_message: Access denied.
+  enabled: false
+languages:
+  default: en
+  supported:
+  - en
+  - ar
+logging:
+  enabled: true
+  format: text
+  level: INFO
+  log_file: logs/api.log
+  retention: 7 days
+  rotation: 10 MB
+modules:
+  adhan: true
+  allah_names: true
+  auth: true
+  azkar: true
+  dua: true
+  hadith: true
+  hijri: true
+  islamic_events: true
+  location: true
+  prayer_times: true
+  qibla: true
+  quran: false
+  ramadan: true
+  sharaawi: true
+  zakat: true
+port: 8000
+security:
+  auth_enabled: false
+  ip_whitelist: []
+  rate_limit_default: 60/minute
+  rate_limit_heavy: 10/minute
+  rate_limit_strict: 30/minute
+  rate_limiting: true
 server:
   host: 0.0.0.0
   port: 8000
   reload: true
-
-modules:
-  prayer_times: true
-  qibla: true
-  ramadan: true
-  hijri: true
-  azkar: true
-  dua: true
-  allah_names: true
-  hadith: true
-  auth: true
-  quran: false
-  location: true
-  islamic_events: true
-  zakat: true
-  sharaawi: true
-  adhan: true
-
-security:
-  auth_enabled: false
-  rate_limiting: true
-  rate_limit_default: "60/minute"
-  rate_limit_strict: "30/minute"
-  rate_limit_heavy: "10/minute"
-  ip_whitelist: []
-
-cors:
-  enabled: true
-  allowed_origins:
-    - "*"
-  allowed_methods:
-    - "GET"
-    - "POST"
-    - "OPTIONS"
-  allowed_headers:
-    - "*"
-
-database:
-  enabled: true
-  backend: sqlite # sqlite | postgresql
-
-  # SQLite — default, zero setup, file-based
-  path: data/islammate.db
-
-  # PostgreSQL — uncomment for production
-  # backend: postgresql
-  # host: localhost
-  # port: 5432
-  # name: islammate
-  # user: postgres
-  # password: ""
-
-  echo: false # true = log all SQL queries (dev only)
-  pool_size: 5 # postgresql only, ignored for sqlite
-
-cache:
-  ttl: 3600
-
-languages:
-  default: en
-  supported:
-    - en
-    - ar
-
-logging:
-  enabled: true
-  level: "INFO"
-  format: "text"
-  log_file: "logs/api.log"
-  rotation: "10 MB"
-  retention: "7 days"
-
-ip_whitelist:
-  enabled: false
-  allowed_ips:
-    - "127.0.0.1"
-    - "::1"
-  block_message: "Access denied."
