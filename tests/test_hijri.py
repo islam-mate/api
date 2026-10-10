@@ -103,17 +103,20 @@ class TestHijri:
         assert data["year"] == 2026
         assert len(data["events"]) > 0
 
+
     def test_islamic_events_have_eid(self):
         response = client.get(
             "/api/v1/hijri/events",
             params={"year": 2026}
         )
         data = response.json()
-        event_names = [e["name"] for e in data["events"]]
-        assert any("Eid" in name for name in event_names)
-
+        holidays = data["events"]["holidays"]
+        names_en = [h["name_en"] for h in holidays]
+        assert any("Eid" in name for name in names_en)
+        
+        
     def test_islamic_events_sorted_by_date(self):
         response = client.get("/api/v1/hijri/events")
         data = response.json()
-        dates = [e["gregorian_date"] for e in data["events"]]
+        dates = [h["gregorian_date"] for h in data["events"]["holidays"] if h["gregorian_date"]]
         assert dates == sorted(dates)

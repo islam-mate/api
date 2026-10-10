@@ -71,6 +71,7 @@ languages:
   supported:
     - en
     - ar
+
 logging:
   enabled: true
   level: "INFO"

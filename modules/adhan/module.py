@@ -1,200 +1,125 @@
-from fastapi import APIRouter, Query, HTTPException, Request
+﻿from fastapi import APIRouter, Query, HTTPException, Request
 import json
 import os
 import random
 
 from base.base_module import BaseModule
 
-HF_BASE = "https://huggingface.co/datasets/elprofessorai/islam-mate-data/resolve/main"
-HF_INDEX_URL = f"{HF_BASE}/adhan/index.json"
-DATA_FILE = "data/adhan/index.json"
+HF_BASE         = "https://huggingface.co/datasets/elprofessorai/islam-mate-data/resolve/main"
+HF_METADATA_URL = f"{HF_BASE}/adhan/metadata.json"
+DATA_FILE       = "data/adhan/metadata.json"
 
 
 class Module(BaseModule):
-    name = "adhan"
-    version = "1.0.0"
+    name         = "adhan"
+    version      = "1.1.0"
     dependencies = []
 
     def __init__(self, service_container):
         super().__init__(service_container)
-        self._index = None   # cached on first request
-
-    # ── Route registration ────────────────────────────────────────────────────
+        self._recordings   = None
+        self._by_muezzin   = None
+        self._muezzin_list = None
 
     def register_routes(self, router: APIRouter):
-        router.add_api_route("/adhan/muezzins",
-                             self.get_muezzins, methods=["GET"])
-        router.add_api_route(
-            "/adhan/muezzins/{id}",  self.get_muezzin,  methods=["GET"])
-        router.add_api_route("/adhan/random",
-                             self.get_random,   methods=["GET"])
-        router.add_api_route(
-            "/adhan",                self.get_all,      methods=["GET"])
-        router.add_api_route("/adhan/{id}",
-                             self.get_adhan,    methods=["GET"])
+        router.add_api_route("/adhan/muezzins",       self.get_muezzins, methods=["GET"])
+        router.add_api_route("/adhan/muezzins/{id}",  self.get_muezzin,  methods=["GET"])
+        router.add_api_route("/adhan/random",         self.get_random,   methods=["GET"])
+        router.add_api_route("/adhan",                self.get_all,      methods=["GET"])
+        router.add_api_route("/adhan/{id}",           self.get_adhan,    methods=["GET"])
 
-    # ── Data loading ──────────────────────────────────────────────────────────
-
-    def _load_index(self) -> dict:
-        if self._index is not None:
-            return self._index
+    def _load(self):
+        if self._recordings is not None:
+            return
         if not os.path.exists(DATA_FILE):
             raise HTTPException(
                 status_code=503,
                 detail={
                     "error": "Adhan data not found locally.",
-                    "hint": f"Download index.json from: {HF_INDEX_URL}",
+                    "hint": f"Download metadata.json from: {HF_METADATA_URL}",
+                    "path": DATA_FILE,
                 }
             )
         with open(DATA_FILE, "r", encoding="utf-8") as f:
-            self._index = json.load(f)
-        return self._index
+            self._recordings = json.load(f)
+        grouped = {}
+        for rec in self._recordings:
+            slug = rec.get("muezzin", "unknown")
+            grouped.setdefault(slug, []).append(rec)
+        def _slug_key(s):
+            return (1 if s == "unknown" else 0, s)
+        self._by_muezzin = grouped
+        self._muezzin_list = []
+        for idx, slug in enumerate(sorted(grouped.keys(), key=_slug_key), start=1):
+            recs = grouped[slug]
+            derived = slug.replace("_", " ").title()
+            self._muezzin_list.append({
+                "id": idx, "slug": slug,
+                "name_ar": derived, "name_en": derived,
+                "count": len(recs), "recordings": recs,
+            })
 
-    # ── Formatters ────────────────────────────────────────────────────────────
-
-    def _format_recording(self, rec: dict, lang: str) -> dict:
+    def _fmt_rec(self, rec: dict, lang: str) -> dict:
         return {
-            "id": rec["id"],
-            "title": rec.get("title_ar", "") if lang == "ar" else rec.get("title_en", ""),
-            "title_ar": rec.get("title_ar", ""),
-            "title_en": rec.get("title_en", ""),
-            "filename": rec.get("filename", ""),
+            "id"       : rec["id"],
+            "title"    : rec.get("title_ar", "") if lang == "ar" else rec.get("title_en", ""),
+            "title_ar" : rec.get("title_ar", ""),
+            "title_en" : rec.get("title_en", ""),
+            "muezzin"  : rec.get("muezzin", ""),
+            "filename" : rec.get("filename", ""),
             "audio_url": rec.get("audio_url") or None,
         }
 
-    def _format_muezzin(self, muezzin: dict, lang: str, include_recordings: bool = False) -> dict:
-        name_obj = muezzin.get("name", {})
+    def _fmt_muezzin(self, m: dict, lang: str, include_recordings: bool = False) -> dict:
         result = {
-            "id": muezzin["id"],
-            "slug": muezzin["slug"],
-            "name": name_obj.get("ar", "") if lang == "ar" else name_obj.get("en", ""),
-            "name_ar": name_obj.get("ar", ""),
-            "name_en": name_obj.get("en", ""),
-            "count": muezzin.get("count", len(muezzin.get("recordings", []))),
+            "id": m["id"], "slug": m["slug"],
+            "name": m["name_ar"] if lang == "ar" else m["name_en"],
+            "name_ar": m["name_ar"], "name_en": m["name_en"],
+            "count": m["count"],
         }
         if include_recordings:
-            result["recordings"] = [
-                self._format_recording(r, lang) for r in muezzin.get("recordings", [])
-            ]
+            result["recordings"] = [self._fmt_rec(r, lang) for r in m["recordings"]]
         return result
 
-    # ── Endpoints ─────────────────────────────────────────────────────────────
-
-    async def get_all(
-        self,
-        request: Request,
-        lang: str = Query("en", description="Language: en or ar"),
-        page: int = Query(1,   ge=1, description="Page number"),
-        limit: int = Query(20,  ge=1, le=100, description="Items per page"),
-    ):
-        """List all adhan recordings (flat, paginated)."""
+    async def get_all(self, request: Request,
+                      lang: str = Query("en"), page: int = Query(1, ge=1),
+                      limit: int = Query(20, ge=1, le=100)):
         lang = self.get_lang(request, lang)
-        index = self._load_index()
-
-        # Flatten all recordings across muezzins
-        all_recordings = []
-        for m in index["muezzins"]:
-            for rec in m.get("recordings", []):
-                all_recordings.append((m, rec))
-
-        total = len(all_recordings)
+        self._load()
+        total = len(self._recordings)
         start = (page - 1) * limit
-        end = start + limit
-
-        items = []
-        for muezzin, rec in all_recordings[start:end]:
-            fmt = self._format_recording(rec, lang)
-            name_obj = muezzin.get("name", {})
-            fmt["muezzin_id"] = muezzin["id"]
-            fmt["muezzin_slug"] = muezzin["slug"]
-            fmt["muezzin_name"] = name_obj.get(
-                "ar", "") if lang == "ar" else name_obj.get("en", "")
-            items.append(fmt)
-
         return {
-            "total": total,
-            "page": page,
-            "limit": limit,
+            "total": total, "page": page, "limit": limit,
             "pages": (total + limit - 1) // limit,
-            "recordings": items,
+            "recordings": [self._fmt_rec(r, lang) for r in self._recordings[start:start + limit]],
         }
 
-    async def get_muezzins(
-        self,
-        request: Request,
-        lang: str = Query("en", description="Language: en or ar"),
-    ):
-        """List all muezzins (without their recordings)."""
+    async def get_muezzins(self, request: Request, lang: str = Query("en")):
         lang = self.get_lang(request, lang)
-        index = self._load_index()
+        self._load()
+        return {"total": len(self._muezzin_list),
+                "muezzins": [self._fmt_muezzin(m, lang) for m in self._muezzin_list]}
 
-        return {
-            "total": index["total_muezzins"],
-            "muezzins": [self._format_muezzin(m, lang) for m in index["muezzins"]],
-        }
-
-    async def get_muezzin(
-        self,
-        id: int,
-        request: Request,
-        lang: str = Query("en", description="Language: en or ar"),
-    ):
-        """Get a single muezzin with all their recordings."""
+    async def get_muezzin(self, id: int, request: Request, lang: str = Query("en")):
         lang = self.get_lang(request, lang)
-        index = self._load_index()
+        self._load()
+        m = next((m for m in self._muezzin_list if m["id"] == id), None)
+        if not m:
+            raise HTTPException(status_code=404, detail=f"Muezzin {id} not found.")
+        return self._fmt_muezzin(m, lang, include_recordings=True)
 
-        muezzin = next((m for m in index["muezzins"] if m["id"] == id), None)
-        if not muezzin:
-            raise HTTPException(
-                status_code=404, detail=f"Muezzin {id} not found.")
-
-        return self._format_muezzin(muezzin, lang, include_recordings=True)
-
-    async def get_adhan(
-        self,
-        id: int,
-        request: Request,
-        lang: str = Query("en", description="Language: en or ar"),
-    ):
-        """Get a single adhan recording by its ID."""
+    async def get_adhan(self, id: int, request: Request, lang: str = Query("en")):
         lang = self.get_lang(request, lang)
-        index = self._load_index()
+        self._load()
+        rec = next((r for r in self._recordings if r["id"] == id), None)
+        if not rec:
+            raise HTTPException(status_code=404, detail=f"Adhan recording {id} not found.")
+        return self._fmt_rec(rec, lang)
 
-        for muezzin in index["muezzins"]:
-            for rec in muezzin.get("recordings", []):
-                if rec["id"] == id:
-                    fmt = self._format_recording(rec, lang)
-                    name_obj = muezzin.get("name", {})
-                    fmt["muezzin_id"] = muezzin["id"]
-                    fmt["muezzin_slug"] = muezzin["slug"]
-                    fmt["muezzin_name"] = name_obj.get(
-                        "ar", "") if lang == "ar" else name_obj.get("en", "")
-                    return fmt
-
-        raise HTTPException(
-            status_code=404, detail=f"Adhan recording {id} not found.")
-
-    async def get_random(
-        self,
-        request: Request,
-        lang: str = Query("en", description="Language: en or ar"),
-    ):
-        """Return a random adhan recording."""
+    async def get_random(self, request: Request, lang: str = Query("en")):
         lang = self.get_lang(request, lang)
-        index = self._load_index()
-
-        candidates = [m for m in index["muezzins"] if m.get("recordings")]
-        if not candidates:
-            raise HTTPException(
-                status_code=503, detail="No adhan data available.")
-
-        muezzin = random.choice(candidates)
-        rec = random.choice(muezzin["recordings"])
-
-        fmt = self._format_recording(rec, lang)
-        name_obj = muezzin.get("name", {})
-        fmt["muezzin_id"] = muezzin["id"]
-        fmt["muezzin_slug"] = muezzin["slug"]
-        fmt["muezzin_name"] = name_obj.get(
-            "ar", "") if lang == "ar" else name_obj.get("en", "")
-        return fmt
+        self._load()
+        if not self._recordings:
+            raise HTTPException(status_code=503, detail="No adhan data available.")
+        import random
+        return self._fmt_rec(random.choice(self._recordings), lang)

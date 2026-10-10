@@ -20,6 +20,11 @@ modules:
   hadith: true
   auth: true
   quran: false
+  location: true
+  islamic_events: true
+  zakat: true
+  alsharaawi: true
+  adhan: true
 
 security:
   auth_enabled: false
@@ -30,16 +35,33 @@ security:
   ip_whitelist: []
 
 cors:
-  allow_origins:
+  enabled: true
+  allowed_origins:
     - "*"
-  allow_methods:
-    - "*"
-  allow_headers:
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "OPTIONS"
+  allowed_headers:
     - "*"
 
 database:
-  pool_size: 10
-  max_overflow: 20
+  enabled: true
+  backend: sqlite # sqlite | postgresql
+
+  # SQLite — default, zero setup, file-based
+  path: data/islammate.db
+
+  # PostgreSQL — uncomment for production
+  # backend: postgresql
+  # host: localhost
+  # port: 5432
+  # name: islammate
+  # user: postgres
+  # password: ""
+
+  echo: false # true = log all SQL queries (dev only)
+  pool_size: 5 # postgresql only, ignored for sqlite
 
 cache:
   ttl: 3600
@@ -49,3 +71,18 @@ languages:
   supported:
     - en
     - ar
+
+logging:
+  enabled: true
+  level: "INFO"
+  format: "text"
+  log_file: "logs/api.log"
+  rotation: "10 MB"
+  retention: "7 days"
+
+ip_whitelist:
+  enabled: false
+  allowed_ips:
+    - "127.0.0.1"
+    - "::1"
+  block_message: "Access denied."

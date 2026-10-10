@@ -2,8 +2,6 @@ from fastapi import APIRouter, Query, Request
 from base.base_module import BaseModule
 from datetime import datetime, date, timedelta
 from hijridate import Gregorian, Hijri
-from modules.location.platforms import router as platforms_router
-import math
 
 
 class Module(BaseModule):
@@ -44,7 +42,6 @@ class Module(BaseModule):
         """Get all Fridays in a Gregorian year."""
         fridays = []
         d = date(year, 1, 1)
-        # Find first Friday
         while d.weekday() != 4:  # 4 = Friday
             d += timedelta(days=1)
         while d.year == year:
@@ -114,18 +111,21 @@ class Module(BaseModule):
     async def get_events(
         self,
         request: Request,
-        year: int = Query(None, description="Gregorian year (default: current year)"),
+        year: int = Query(
+            None, description="Gregorian year (default: current year)"),
         lang: str = Query("en", description="Language: en or ar"),
-        include_weekly: bool = Query(True, description="Include weekly Jumu'ah (Friday prayers)"),
-        include_monthly: bool = Query(True, description="Include monthly White Days"),
-        event_type: str = Query(None, description="Filter by type: holidays, months, special_nights, weekly, monthly")
+        include_weekly: bool = Query(
+            True, description="Include weekly Jumu'ah (Friday prayers)"),
+        include_monthly: bool = Query(
+            True, description="Include monthly White Days"),
+        event_type: str = Query(
+            None, description="Filter by type: holidays, months, special_nights, weekly, monthly")
     ):
         lang = self.get_lang(request, lang)
 
         if year is None:
             year = datetime.now().year
 
-        # Get Hijri year for Jan 1
         h_year, _, _ = self._gregorian_to_hijri(date(year, 6, 15))
         hijri_year = h_year if h_year else 1446
 
@@ -134,7 +134,6 @@ class Module(BaseModule):
         # ============================================
         holidays = []
 
-        # Islamic New Year (1 Muharram)
         new_year_date = self._hijri_to_gregorian(hijri_year, 1, 1)
         holidays.append(self._format_event(
             "Islamic New Year", "رأس السنة الهجرية",
@@ -145,7 +144,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Ashura (10 Muharram)
         ashura_date = self._hijri_to_gregorian(hijri_year, 1, 10)
         holidays.append(self._format_event(
             "Ashura", "يوم عاشوراء",
@@ -156,7 +154,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Isra and Mi'raj (27 Rajab)
         isra_date = self._hijri_to_gregorian(hijri_year, 7, 27)
         holidays.append(self._format_event(
             "Isra and Mi'raj", "الإسراء والمعراج",
@@ -167,7 +164,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Mid Sha'ban (15 Sha'ban)
         mid_shaban_date = self._hijri_to_gregorian(hijri_year, 8, 15)
         holidays.append(self._format_event(
             "Mid Sha'ban (Laylat al-Bara'ah)", "نصف شعبان (ليلة البراءة)",
@@ -178,7 +174,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Ramadan Start (1 Ramadan)
         ramadan_date = self._hijri_to_gregorian(hijri_year, 9, 1)
         holidays.append(self._format_event(
             "Ramadan", "رمضان",
@@ -191,7 +186,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Laylat al-Qadr (27 Ramadan — most common opinion)
         qadr_date = self._hijri_to_gregorian(hijri_year, 9, 27)
         holidays.append(self._format_event(
             "Laylat al-Qadr (Night of Power)", "ليلة القدر",
@@ -202,7 +196,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Eid al-Fitr (1 Shawwal)
         eid_fitr_date = self._hijri_to_gregorian(hijri_year, 10, 1)
         holidays.append(self._format_event(
             "Eid al-Fitr", "عيد الفطر",
@@ -215,7 +208,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Day of Arafat (9 Dhul Hijjah)
         arafat_date = self._hijri_to_gregorian(hijri_year, 12, 9)
         holidays.append(self._format_event(
             "Day of Arafat", "يوم عرفة",
@@ -226,7 +218,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Eid al-Adha (10 Dhul Hijjah)
         eid_adha_date = self._hijri_to_gregorian(hijri_year, 12, 10)
         holidays.append(self._format_event(
             "Eid al-Adha", "عيد الأضحى",
@@ -239,7 +230,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Mawlid al-Nabi (12 Rabi al-Awwal)
         mawlid_date = self._hijri_to_gregorian(hijri_year, 3, 12)
         holidays.append(self._format_event(
             "Mawlid al-Nabi (Prophet's Birthday)", "المولد النبوي الشريف",
@@ -250,7 +240,6 @@ class Module(BaseModule):
             lang=lang
         ))
 
-        # Sort holidays by date
         holidays = sorted(
             [h for h in holidays if h.get("gregorian_date")],
             key=lambda x: x["gregorian_date"]
@@ -296,7 +285,6 @@ class Module(BaseModule):
         # ============================================
         special_nights = []
 
-        # Last 10 nights of Ramadan (21-30 Ramadan)
         for day in range(21, 31):
             night_date = self._hijri_to_gregorian(hijri_year, 9, day)
             special_nights.append({
@@ -314,7 +302,6 @@ class Module(BaseModule):
                 "is_odd": day % 2 != 0
             })
 
-        # Laylat al-Qadr specifically on odd nights
         special_nights_sorted = sorted(
             [n for n in special_nights if n.get("gregorian_date")],
             key=lambda x: x["gregorian_date"]
@@ -380,13 +367,24 @@ class Module(BaseModule):
         # Count total
         total = sum(len(v) for v in all_events.values())
 
+        # Flat sorted list — useful for simple chronological iteration
+        flat_events = []
+        for section in all_events.values():
+            flat_events.extend(section)
+        flat_events = sorted(
+            [e for e in flat_events if e.get("gregorian_date")],
+            key=lambda x: x["gregorian_date"]
+        )
+
         return {
             "year": year,
             "hijri_year": hijri_year,
+            "total": total,
             "total_events": total,
             "calculation_method": self.translate({
                 "ar": "حساب فلكي — قد يختلف يوماً واحداً بناءً على رؤية الهلال",
                 "en": "Astronomical calculation — may differ by 1 day based on moon sighting"
             }, lang),
-            "events": all_events
+            "events": all_events,
+            "events_flat": flat_events,
         }

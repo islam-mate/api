@@ -16,7 +16,7 @@ class ServiceContainer:
     async def init(self):
         self.config.load()
         self.logger.setup()
-        await self.db.connect()
+        await self.db.connect(self.config.config)
         await self.cache.connect()
         self.logger.info("All services initialized")
 
